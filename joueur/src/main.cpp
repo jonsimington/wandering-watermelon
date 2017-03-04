@@ -146,12 +146,29 @@ int main(int argc, const char* argv[])
       game.set_password(string_args[password].getValue());
       game.set_session(string_args[session].getValue());
       game.set_name(string_args[player_name].getValue());
+      game.set_settings(string_args[settings].getValue());
       game.set_ai_parameters(string_args[ai_settings].getValue());
       game.go();
    }
+   // yuck a macro - best option here though...
+   #define CATCHER(x)                                                 \
+      catch(const x& e)                                               \
+      {                                                               \
+         std::cerr << sgr::text_red << "[" #x "] An error occured:\n" \
+                   << e.what() << sgr::reset << std::endl;            \
+      }
+   CATCHER(Game_not_found)
+   CATCHER(Communication_error)
+   CATCHER(Unknown_type)
+   CATCHER(Parse_error)
+   CATCHER(Bad_response)
+   CATCHER(Bad_manipulation)
+   CATCHER(Server_error)
+   CATCHER(Input_error)
+   CATCHER(Unknown_error)
    catch(const std::exception& e)
    {
-      std::cerr << sgr::text_red << "An error occurred:\n" << e.what() << sgr::reset << std::endl;
+      std::cerr << sgr::text_red << "Some error occurred:\n" << e.what() << sgr::reset << std::endl;
       return 1;
    }
    catch(...)
@@ -159,4 +176,5 @@ int main(int argc, const char* argv[])
       std::cerr << sgr::text_red << "An unknown error occurred." << sgr::reset << std::endl;
       return 2;
    }
+   #undef CATCHER
 }
