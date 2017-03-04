@@ -12,6 +12,7 @@
 #include "../../joueur/src/attr_wrapper.hpp"
 
 // You can add additional #includes here
+#include "custom.hpp"
 
 namespace cpp_client
 {
