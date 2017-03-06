@@ -14,6 +14,7 @@
 // You can add additional #includes here
 #include "custom.hpp"
 
+
 namespace cpp_client
 {
 
@@ -37,6 +38,7 @@ public:
     Player player;
 
     // You can add additional class variables here.
+    State currentState;
 
     /// <summary>
     /// This returns your AI's name to the game server.
