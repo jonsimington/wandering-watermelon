@@ -30,46 +30,46 @@ void AI::start()
   // This is a good place to initialize any variables
   srand(time(NULL));
   
-  
-  currentState.numPlayerPieces=player->pieces.size();
-  currentState.playerPieces= new MyPiece[currentState.numPlayerPieces];
-  for(int i=0; i<currentState.numPlayerPieces; i++)
+  currentState= new State();
+  currentState->numPlayerPieces=player->pieces.size();
+  currentState->playerPieces= new MyPiece[currentState->numPlayerPieces];
+  for(int i=0; i<currentState->numPlayerPieces; i++)
   {
     
-    currentState.playerPieces[i].captured=player->pieces[i]->captured;
-    currentState.playerPieces[i].color=player->pieces[i]->owner->color;
-    currentState.playerPieces[i].rank=player->pieces[i]->rank;
-    currentState.playerPieces[i].file=player->pieces[i]->file;
-    currentState.playerPieces[i].type=player->pieces[i]->type;
-    currentState.playerPieces[i].moved=player->pieces[i]->has_moved;
-    currentState.playerPieces[i].pieceRef=player->pieces[i];
+    currentState->playerPieces[i].captured=player->pieces[i]->captured;
+    currentState->playerPieces[i].color=player->pieces[i]->owner->color;
+    currentState->playerPieces[i].rank=player->pieces[i]->rank;
+    currentState->playerPieces[i].file=player->pieces[i]->file;
+    currentState->playerPieces[i].type=player->pieces[i]->type;
+    currentState->playerPieces[i].moved=player->pieces[i]->has_moved;
+    currentState->playerPieces[i].pieceRef=player->pieces[i];
   }
   
-  currentState.numEnemyPieces=player->opponent->pieces.size();
-  currentState.enemyPieces= new MyPiece[currentState.numEnemyPieces];
-  for(int i=0; i<currentState.numEnemyPieces; i++)
+  currentState->numEnemyPieces=player->opponent->pieces.size();
+  currentState->enemyPieces= new MyPiece[currentState->numEnemyPieces];
+  for(int i=0; i<currentState->numEnemyPieces; i++)
   {
     
-    currentState.enemyPieces[i].captured=player->opponent->pieces[i]->captured;
-    currentState.enemyPieces[i].color=player->opponent->pieces[i]->owner->color;
-    currentState.enemyPieces[i].rank=player->opponent->pieces[i]->rank;
-    currentState.enemyPieces[i].file=player->opponent->pieces[i]->file;
-    currentState.enemyPieces[i].type=player->opponent->pieces[i]->type;
-    currentState.enemyPieces[i].moved=player->opponent->pieces[i]->has_moved;
-    currentState.enemyPieces[i].pieceRef=player->opponent->pieces[i];
+    currentState->enemyPieces[i].captured=player->opponent->pieces[i]->captured;
+    currentState->enemyPieces[i].color=player->opponent->pieces[i]->owner->color;
+    currentState->enemyPieces[i].rank=player->opponent->pieces[i]->rank;
+    currentState->enemyPieces[i].file=player->opponent->pieces[i]->file;
+    currentState->enemyPieces[i].type=player->opponent->pieces[i]->type;
+    currentState->enemyPieces[i].moved=player->opponent->pieces[i]->has_moved;
+    currentState->enemyPieces[i].pieceRef=player->opponent->pieces[i];
   }
   
   if(player->color=="White")
   {
-    currentState.forward=1;
+    currentState->forward=1;
   }
   else
   {
-    currentState.forward=-1;
+    currentState->forward=-1;
   }
   
-  currentState.passant=false;
-  currentState.fen(game->fen);
+  currentState->passant=false;
+  currentState->fen(game->fen);
 }
 
 /// <summary>
@@ -87,8 +87,9 @@ void AI::game_updated()
 /// <param name="reason">An explanation for why you either won or lost</param>
 void AI::ended(bool won, const std::string& reason)
 {
-  delete[] currentState.enemyPieces;
-  delete[] currentState.playerPieces;
+  delete[] currentState->enemyPieces;
+  delete[] currentState->playerPieces;
+  delete currentState;
   // You can do any cleanup of your AI here.  The program ends when this function returns.
 }
 
@@ -104,9 +105,9 @@ bool AI::run_turn()
     //  game->moves[game->moves.size() - 1]->san ;
     int e=0;
     bool found=false;
-    while(e<currentState.numEnemyPieces && ! found)
+    while(e<currentState->numEnemyPieces && ! found)
     {
-      if(currentState.enemyPieces[e].captured==false && currentState.enemyPieces[e].rank==game->moves[game->moves.size() - 1]->from_rank && currentState.enemyPieces[e].file==game->moves[game->moves.size() - 1]->from_file)
+      if(currentState->enemyPieces[e].captured==false && currentState->enemyPieces[e].rank==game->moves[game->moves.size() - 1]->from_rank && currentState->enemyPieces[e].file==game->moves[game->moves.size() - 1]->from_file)
       {
         found=true;
       }
@@ -117,26 +118,26 @@ bool AI::run_turn()
     }
     
     int cap;
-    if(1==currentState.checkSpace(game->moves[game->moves.size() - 1]->to_rank, game->moves[game->moves.size() - 1]->to_file[0], cap))
+    if(1==currentState->checkSpace(game->moves[game->moves.size() - 1]->to_rank, game->moves[game->moves.size() - 1]->to_file[0], cap))
     {
-      currentState.playerPieces[cap].captured=true;
+      currentState->playerPieces[cap].captured=true;
     }
     
-    if(currentState.passant && game->moves[game->moves.size() - 1]->to_rank==currentState.rankP && game->moves[game->moves.size() - 1]->to_file==currentState.fileP)
+    if(currentState->passant && game->moves[game->moves.size() - 1]->to_rank==currentState->rankP && game->moves[game->moves.size() - 1]->to_file==currentState->fileP)
     {
-      currentState.playerPieces[currentState.passantTarget].captured=true;
+      currentState->playerPieces[currentState->passantTarget].captured=true;
     }
     
-    currentState.passant=false;
+    currentState->passant=false;
     
     //En Passant availability detection.
     int rankDif=game->moves[game->moves.size() - 1]->to_rank-game->moves[game->moves.size() - 1]->from_rank;
     if(game->moves[game->moves.size() - 1]->piece->type=="Pawn" && (rankDif==-2 || rankDif==2))
     {
-      currentState.passant=true;
-      currentState.rankP=game->moves[game->moves.size() - 1]->to_rank+currentState.forward;
-      currentState.fileP=game->moves[game->moves.size() - 1]->to_file;
-      currentState.passantTarget=e;
+      currentState->passant=true;
+      currentState->rankP=game->moves[game->moves.size() - 1]->to_rank+currentState->forward;
+      currentState->fileP=game->moves[game->moves.size() - 1]->to_file;
+      currentState->passantTarget=e;
     }
     
     //Castle detection
@@ -145,18 +146,18 @@ bool AI::run_turn()
     {
       bool rookFound=false;
       int r=0;
-      while(!rookFound && r<currentState.numEnemyPieces)
+      while(!rookFound && r<currentState->numEnemyPieces)
       {
         bool direction;
         if(fileDif>0) //If King moved right, need a rook to the right.
         {
-          direction=(currentState.enemyPieces[r].file[0]> game->moves[game->moves.size() - 1]->from_file[0]);
+          direction=(currentState->enemyPieces[r].file[0]> game->moves[game->moves.size() - 1]->from_file[0]);
         }
         else //If King moved left, need a rook to the left.
         {
-          direction=(currentState.enemyPieces[r].file[0]< game->moves[game->moves.size() - 1]->from_file[0]);
+          direction=(currentState->enemyPieces[r].file[0]< game->moves[game->moves.size() - 1]->from_file[0]);
         }
-        if(currentState.enemyPieces[r].type=="Rook" && currentState.enemyPieces[r].moved==false && direction && currentState.enemyPieces[r].rank==currentState.enemyPieces[e].rank)
+        if(currentState->enemyPieces[r].type=="Rook" && currentState->enemyPieces[r].moved==false && direction && currentState->enemyPieces[r].rank==currentState->enemyPieces[e].rank)
         {
           rookFound=true;
         }
@@ -165,16 +166,16 @@ bool AI::run_turn()
           r++;
         }
       }
-      currentState.enemyPieces[r].moved=true;
-      currentState.enemyPieces[r].file=game->moves[game->moves.size() - 1]->to_file[0]-(fileDif/2);
+      currentState->enemyPieces[r].moved=true;
+      currentState->enemyPieces[r].file=game->moves[game->moves.size() - 1]->to_file[0]-(fileDif/2);
     }
     
-    currentState.enemyPieces[e].rank=game->moves[game->moves.size() - 1]->to_rank;
-    currentState.enemyPieces[e].file=game->moves[game->moves.size() - 1]->to_file;
-    currentState.enemyPieces[e].moved=true;
+    currentState->enemyPieces[e].rank=game->moves[game->moves.size() - 1]->to_rank;
+    currentState->enemyPieces[e].file=game->moves[game->moves.size() - 1]->to_file;
+    currentState->enemyPieces[e].moved=true;
     if(game->moves[game->moves.size() - 1]->promotion!="")
     {
-      currentState.enemyPieces[e].type=game->moves[game->moves.size() - 1]->promotion;
+      currentState->enemyPieces[e].type=game->moves[game->moves.size() - 1]->promotion;
     }
     
     
@@ -183,25 +184,27 @@ bool AI::run_turn()
   }
 
   
-  currentState.genMoves(); //Generate all moves
-
-  int randPiece=rand()%currentState.numPlayerPieces; //Select a piece
-  while(currentState.playerPieces[randPiece].numMoves==0 || currentState.playerPieces[randPiece].captured==true)
+  currentState->genMoves(); //Generate all moves
+  
+  /*
+  int randPiece=rand()%currentState->numPlayerPieces; //Select a piece
+  while(currentState->playerPieces[randPiece].numMoves==0 || currentState->playerPieces[randPiece].captured==true)
   {
-    randPiece=rand()%currentState.numPlayerPieces;
+    randPiece=rand()%currentState->numPlayerPieces;
   }
-  int randMove=rand()%currentState.playerPieces[randPiece].numMoves; //Select a move
-  //cout<<"Selected: "<<randPiece<<" "<<randMove<<" of "<<currentState.playerPieces[randPiece].numMoves<<endl;
-  MoveList * selectedMove= currentState.playerPieces[randPiece].legalMoves; //Find selected move
+  int randMove=rand()%currentState->playerPieces[randPiece].numMoves; //Select a move
+  //cout<<"Selected: "<<randPiece<<" "<<randMove<<" of "<<currentState->playerPieces[randPiece].numMoves<<endl;
+  MoveList * selectedMove= currentState->playerPieces[randPiece].legalMoves; //Find selected move
   for( int i=0; i<randMove; i++)
   {
 
     selectedMove=selectedMove->next;
   }
-
+  */
   
-  MoveList * printMove= currentState.playerPieces[randPiece].legalMoves;
-  cout<<currentState.playerPieces[randPiece].type<<" at "<<currentState.playerPieces[randPiece].rank<<" "<<currentState.playerPieces[randPiece].file<<" could move to ";
+  /*
+  MoveList * printMove= currentState->playerPieces[randPiece].legalMoves;
+  cout<<currentState->playerPieces[randPiece].type<<" at "<<currentState->playerPieces[randPiece].rank<<" "<<currentState->playerPieces[randPiece].file<<" could move to ";
   while(printMove != NULL)
   {
     if(printMove->promotionType!="")
@@ -216,72 +219,73 @@ bool AI::run_turn()
     printMove=printMove->next;
   }
   cout<<endl;
-
+  */
+  
   /*
   //Outputs piece locations
-  for( int i=0; i<currentState.numPlayerPieces; i++)
+  for( int i=0; i<currentState->numPlayerPieces; i++)
   {
-    if(currentState.playerPieces[i].captured!=true)
+    if(currentState->playerPieces[i].captured!=true)
     {
-      cout<<"My "<<currentState.playerPieces[i].type<<" at "<<currentState.playerPieces[i].rank<<" "<<currentState.playerPieces[i].file<<endl;
+      cout<<"My "<<currentState->playerPieces[i].type<<" at "<<currentState->playerPieces[i].rank<<" "<<currentState->playerPieces[i].file<<endl;
     }
   }
   
-  for( int i=0; i<currentState.numEnemyPieces; i++)
+  for( int i=0; i<currentState->numEnemyPieces; i++)
   {
-    if(currentState.enemyPieces[i].captured!=true)
+    if(currentState->enemyPieces[i].captured!=true)
     {
-      cout<<"Enemy "<<currentState.enemyPieces[i].type<<" at "<<currentState.enemyPieces[i].rank<<" "<<currentState.enemyPieces[i].file<<endl;
+      cout<<"Enemy "<<currentState->enemyPieces[i].type<<" at "<<currentState->enemyPieces[i].rank<<" "<<currentState->enemyPieces[i].file<<endl;
     }
   }*/
   
-  currentState.passant=false;
-  
+  currentState->passant=false;
+  /*
   //Send move to game
   if(selectedMove->promotionType!="")
   {
-    currentState.playerPieces[randPiece].pieceRef->move(selectedMove->toFile, selectedMove->toRank, selectedMove->promotionType);
-    currentState.playerPieces[randPiece].type=selectedMove->promotionType;
+    currentState->playerPieces[randPiece].pieceRef->move(selectedMove->toFile, selectedMove->toRank, selectedMove->promotionType);
+    currentState->playerPieces[randPiece].type=selectedMove->promotionType;
   }
   else
   {
-    currentState.playerPieces[randPiece].pieceRef->move(selectedMove->toFile, selectedMove->toRank);
+    currentState->playerPieces[randPiece].pieceRef->move(selectedMove->toFile, selectedMove->toRank);
   }
   
-  if(currentState.playerPieces[randPiece].type=="Pawn" && selectedMove->toRank==currentState.playerPieces[randPiece].rank+currentState.forward*2)
+  if(currentState->playerPieces[randPiece].type=="Pawn" && selectedMove->toRank==currentState->playerPieces[randPiece].rank+currentState->forward*2)
   {
-    currentState.passant=true;
-    currentState.rankP=selectedMove->toRank-currentState.forward;
-    currentState.fileP=selectedMove->toFile;
-    currentState.passantTarget=randPiece;
+    currentState->passant=true;
+    currentState->rankP=selectedMove->toRank-currentState->forward;
+    currentState->fileP=selectedMove->toFile;
+    currentState->passantTarget=randPiece;
   }
   
-  currentState.playerPieces[randPiece].file=selectedMove->toFile;//Update own information
-  currentState.playerPieces[randPiece].rank=selectedMove->toRank;
-  currentState.playerPieces[randPiece].moved=true;
+  currentState->playerPieces[randPiece].file=selectedMove->toFile;//Update own information
+  currentState->playerPieces[randPiece].rank=selectedMove->toRank;
+  currentState->playerPieces[randPiece].moved=true;
   if(selectedMove->isCastle!=0)
   {
-    currentState.playerPieces[selectedMove->rookIndex].file=currentState.playerPieces[randPiece].file[0]+selectedMove->isCastle;
+    currentState->playerPieces[selectedMove->rookIndex].file=currentState->playerPieces[randPiece].file[0]+selectedMove->isCastle;
   }
   
 
   if(selectedMove->isCapture)
   {
-      currentState.enemyPieces[selectedMove->target].captured=true;
+      currentState->enemyPieces[selectedMove->target].captured=true;
   }
   
-  
+  */
   MoveList * temp;
   
-  for( int i=0; i<currentState.numPlayerPieces; i++)
+  for( int i=0; i<currentState->numPlayerPieces; i++)
   {
-    while(currentState.playerPieces[i].legalMoves != NULL)
+    while(currentState->playerPieces[i].legalMoves != NULL)
     {
-      temp=currentState.playerPieces[i].legalMoves;
-      currentState.playerPieces[i].legalMoves=currentState.playerPieces[i].legalMoves->next;
+      temp=currentState->playerPieces[i].legalMoves;
+      currentState->playerPieces[i].legalMoves=currentState->playerPieces[i].legalMoves->next;
       delete temp;
     }
-    currentState.playerPieces[i].numMoves=0;
+    currentState->playerPieces[i].numMoves=0;
   }
   
   

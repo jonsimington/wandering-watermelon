@@ -50,6 +50,7 @@ class State
   int numPlayerPieces;
   int numEnemyPieces;
   int forward;
+  int StateMatValue;
   
   bool passant;
   int rankP;
@@ -68,6 +69,7 @@ class State
   void castleCheck(int k);
   void enPassant(int pawn);
   void fen(string fen);
+  void matAdvEval();
 };
 
 }

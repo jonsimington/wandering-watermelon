@@ -9,82 +9,134 @@ namespace cpp_client
 
 namespace chess
 {
-  
-  //Handles reading FEN string
-  void State::fen(string fen)
+
+//Finds the material value for a state.
+void State::matAdvEval()
+{
+  int count=0;
+  for(int p=0; p<numPlayerPieces; p++)
   {
-    size_t space1, space2, space3, space4;
-    space1=fen.find(" ");
-    space2=fen.find(" ", space1+1);
-    space3=fen.find(" ", space2+1);
-    space4=fen.find(" ", space3+1);
-    
-    string fenCastle=fen.substr(space2+1, (space3)-(space2+1));
-    string fenPassant=fen.substr(space3+1, (space4)-(space3+1));
-    //cout<<"fen strings:"<<fenCastle<<" "<<fenPassant<<endl;
-    
-    castleK=false;
-    castleQ=false;
-    castlek=false;
-    castleq=false;
-    
-    for(int i=0; i<(space3)-(space2+1); i++)
+    if(playerPieces[p].captured!=true)
     {
-      if(fenCastle[i]=='K')
+      if( playerPieces[p].type=="Pawn")
       {
-        castleK=true;
-        
+        count=count+1;
       }
-      if(fenCastle[i]=='Q')
+      if( playerPieces[p].type=="Knight" || playerPieces[p].type=="Bishop")
       {
-        castleQ=true;
-        
+        count=count+3;
       }
-      if(fenCastle[i]=='k')
+      if( playerPieces[p].type=="Rook")
       {
-        castlek=true;
-        
+        count=count+5;
       }
-      if(fenCastle[i]=='q')
+      if( playerPieces[p].type=="Queen")
       {
-        castleq=true;
-        
+        count=count+9;
       }
     }
-    
-    
-    if(fenPassant!="-")
+  }
+  for(int p=0; p<numEnemyPieces; p++)
+  {
+    if(enemyPieces[p].captured!=true)
     {
-      
-      passant=true;
-      rankP=fenPassant[1]-48;
-      fileP=fenPassant[0];
-      for(int i=0; i<numPlayerPieces; i++)
+      if( enemyPieces[p].type=="Pawn")
       {
-        if(playerPieces[i].captured==false && playerPieces[i].rank+1==rankP && playerPieces[i].file==fileP && playerPieces[i].type=="Pawn")
-        {
-          passantTarget=i;
-        }
-        if(playerPieces[i].captured==false && playerPieces[i].rank-1==rankP && playerPieces[i].file==fileP && playerPieces[i].type=="Pawn")
-        {
-          passantTarget=i;
-        }
+        count=count-1;
       }
-      for(int i=0; i<numEnemyPieces; i++)
+      if( enemyPieces[p].type=="Knight" || enemyPieces[p].type=="Bishop")
       {
-        if(enemyPieces[i].captured==false && enemyPieces[i].rank+1==rankP && enemyPieces[i].file==fileP && enemyPieces[i].type=="Pawn")
-        {
-          passantTarget=i;
-        }
-        if(enemyPieces[i].captured==false && enemyPieces[i].rank-1==rankP && enemyPieces[i].file==fileP && enemyPieces[i].type=="Pawn")
-        {
-          passantTarget=i;
-        }
+        count=count-3;
       }
+      if( enemyPieces[p].type=="Rook")
+      {
+        count=count-5;
+      }
+      if( enemyPieces[p].type=="Queen")
+      {
+        count=count-9;
+      }
+    }
+  }
+  StateMatValue=count;
+}
+
+
+//Handles reading FEN string
+void State::fen(string fen)
+{
+  size_t space1, space2, space3, space4;
+  space1=fen.find(" ");
+  space2=fen.find(" ", space1+1);
+  space3=fen.find(" ", space2+1);
+  space4=fen.find(" ", space3+1);
+  
+  string fenCastle=fen.substr(space2+1, (space3)-(space2+1));
+  string fenPassant=fen.substr(space3+1, (space4)-(space3+1));
+  //cout<<"fen strings:"<<fenCastle<<" "<<fenPassant<<endl;
+  
+  castleK=false;
+  castleQ=false;
+  castlek=false;
+  castleq=false;
+  
+  for(int i=0; i<(space3)-(space2+1); i++)
+  {
+    if(fenCastle[i]=='K')
+    {
+      castleK=true;
       
+    }
+    if(fenCastle[i]=='Q')
+    {
+      castleQ=true;
+      
+    }
+    if(fenCastle[i]=='k')
+    {
+      castlek=true;
+      
+    }
+    if(fenCastle[i]=='q')
+    {
+      castleq=true;
       
     }
   }
+  
+  
+  if(fenPassant!="-")
+  {
+    
+    passant=true;
+    rankP=fenPassant[1]-48;
+    fileP=fenPassant[0];
+    for(int i=0; i<numPlayerPieces; i++)
+    {
+      if(playerPieces[i].captured==false && playerPieces[i].rank+1==rankP && playerPieces[i].file==fileP && playerPieces[i].type=="Pawn")
+      {
+        passantTarget=i;
+      }
+      if(playerPieces[i].captured==false && playerPieces[i].rank-1==rankP && playerPieces[i].file==fileP && playerPieces[i].type=="Pawn")
+      {
+        passantTarget=i;
+      }
+    }
+    for(int i=0; i<numEnemyPieces; i++)
+    {
+      if(enemyPieces[i].captured==false && enemyPieces[i].rank+1==rankP && enemyPieces[i].file==fileP && enemyPieces[i].type=="Pawn")
+      {
+        passantTarget=i;
+      }
+      if(enemyPieces[i].captured==false && enemyPieces[i].rank-1==rankP && enemyPieces[i].file==fileP && enemyPieces[i].type=="Pawn")
+      {
+        passantTarget=i;
+      }
+    }
+    
+    
+  }
+}
 
 //Checks if any uncaptured pieces occupy a given space.
 //Output: 1-space occupied by player's piece.
@@ -177,7 +229,7 @@ void State::genMoves()
       }
       
       //Rook
-      if( playerPieces[p].type=="Rook") 
+      if( playerPieces[p].type=="Rook" || playerPieces[p].type=="Queen") 
       {
         end=false;
         for(int i=1; end==false; i++) //up
@@ -252,7 +304,7 @@ void State::genMoves()
       }
       
       //Bishop
-      if( playerPieces[p].type=="Bishop")
+      if( playerPieces[p].type=="Bishop" || playerPieces[p].type=="Queen")
       {
         end=false;
         for(int i=1; end==false; i++) //up right
@@ -410,6 +462,7 @@ void State::genMoves()
         
       }
       
+      /*
       //Queen
       if( playerPieces[p].type=="Queen")
       {
@@ -549,7 +602,7 @@ void State::genMoves()
             }
           }
         }
-      }
+      }*/
       
       //King
       if( playerPieces[p].type=="King")
