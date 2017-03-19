@@ -39,6 +39,7 @@ public:
 
     // You can add additional class variables here.
     State* currentState;
+    int maxDepthLimit;
 
     /// <summary>
     /// This returns your AI's name to the game server.

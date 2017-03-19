@@ -30,6 +30,8 @@ void AI::start()
   // This is a good place to initialize any variables
   srand(time(NULL));
   
+  maxDepthLimit=3;
+  
   currentState= new State();
   currentState->numPlayerPieces=player->pieces.size();
   currentState->playerPieces= new MyPiece[currentState->numPlayerPieces];
@@ -70,6 +72,7 @@ void AI::start()
   
   currentState->passant=false;
   currentState->fen(game->fen);
+  currentState->boringPly=0;
 }
 
 /// <summary>
@@ -178,13 +181,50 @@ bool AI::run_turn()
       currentState->enemyPieces[e].type=game->moves[game->moves.size() - 1]->promotion;
     }
     
+    for(int i=0; i<15; i++)
+    {
+      currentState->history[i+1].toRank=currentState->history[i].toRank;
+      currentState->history[i+1].fromRank=currentState->history[i].fromRank;
+      currentState->history[i+1].toFile=currentState->history[i].toFile;
+      currentState->history[i+1].fromFile=currentState->history[i].fromFile;
+      currentState->history[i+1].piece=currentState->history[i].piece;
+    }
     
+    currentState->history[0].toRank  =game->moves[game->moves.size() - 1]->to_rank;
+    currentState->history[0].fromRank=game->moves[game->moves.size() - 1]->from_rank;
+    currentState->history[0].toFile  =game->moves[game->moves.size() - 1]->to_file;
+    currentState->history[0].fromFile=game->moves[game->moves.size() - 1]->from_file;
+    currentState->history[0].piece   =e;
     
-    
+    if(currentState->enemyPieces[e].type=="Pawn" || game->moves[game->moves.size() - 1]->promotion!="" || game->moves[game->moves.size() - 1]->captured!=NULL)
+    {
+      currentState->boringPly=0;
+    }
+    else
+    {
+      currentState->boringPly++;
+    }
   }
-
   
-  currentState->genMoves(); //Generate all moves
+  
+  MoveList * choice;
+  for(int i=1; i<=maxDepthLimit; i++)
+  {
+    choice=currentState->DLM(i);
+  }
+  
+  currentState->updateState(choice);
+  
+  if(choice->promotionType!="")
+  {
+    currentState->playerPieces[choice->piece].pieceRef->move(choice->toFile, choice->toRank, choice->promotionType);
+  }
+  else
+  {
+    currentState->playerPieces[choice->piece].pieceRef->move(choice->toFile, choice->toRank);
+  }
+  
+  //currentState->genMoves(); //Generate all moves
   
   /*
   //Random Move Selection
@@ -241,7 +281,7 @@ bool AI::run_turn()
     }
   }*/
   
-  currentState->passant=false;
+  //currentState->passant=false;
   /*
   //Send move to game
   if(selectedMove->promotionType!="")
@@ -281,19 +321,18 @@ bool AI::run_turn()
   
   */
   
-  /*
-  MoveList * temp;
   
-  for( int i=0; i<currentState->numPlayerPieces; i++)
+  MoveList * temp=currentState->legalMoves;
+  
+  
+  while(currentState->legalMoves != NULL)
   {
-    while(currentState->playerPieces[i].legalMoves != NULL)
-    {
-      temp=currentState->playerPieces[i].legalMoves;
-      currentState->playerPieces[i].legalMoves=currentState->playerPieces[i].legalMoves->next;
-      delete temp;
-    }
-    currentState->playerPieces[i].numMoves=0;
-  }*/
+    temp=currentState->legalMoves;
+    currentState->legalMoves=currentState->legalMoves->next;
+    delete temp;
+  }
+  currentState->numMoves=0;
+  
   
   
   return true; // to signify we are done with our turn.

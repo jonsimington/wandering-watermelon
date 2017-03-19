@@ -871,9 +871,9 @@ void State::castleCheck(int k)
   
 
 
-//FOR STAGE ONE ONLY
+
 //Ensures King is not in check after move.
-//Move is made for check, then reverted, since generating more states is not yet needed.
+//Move is made for check, then reverted.
 void State::validMoveCheck(int p, int toRank, char toFile, bool capture, int e)
 {
   int rankStore=playerPieces[p].rank;
@@ -935,6 +935,8 @@ void State::addMove(int p, int toRank, char toFile, bool capture, int e, string 
   tmp= new MoveList;
   tmp->toFile=toFile;
   tmp->toRank=toRank;
+  tmp->fromFile=playerPieces[p].file;
+  tmp->fromRank=playerPieces[p].rank;
   tmp->target=e;
   tmp->piece=p;
   tmp->isCapture=capture;
@@ -1318,6 +1320,25 @@ MoveList* State::DLM(int depthLimit)
 {
   genMoves();
   
+  /*
+  for( int i=0; i<numPlayerPieces; i++)
+  {
+    if(playerPieces[i].captured!=true)
+    {
+      cout<<"My "<<playerPieces[i].type<<" at "<<currentState->playerPieces[i].rank<<" "<<currentState->playerPieces[i].file<<endl;
+    }
+  }
+  
+  for( int i=0; i<currentState->numEnemyPieces; i++)
+  {
+    if(currentState->enemyPieces[i].captured!=true)
+    {
+      cout<<"Enemy "<<currentState->enemyPieces[i].type<<" at "<<currentState->enemyPieces[i].rank<<" "<<currentState->enemyPieces[i].file<<endl;
+    }
+  }*/
+  
+  cout<<numMoves<<" generated"<<endl;
+  
   int bestValue=-101;
   int currentValue;
   MoveList* bestMove;
@@ -1326,7 +1347,12 @@ MoveList* State::DLM(int depthLimit)
   MoveList * move=legalMoves;
   for(int i=0; i<numMoves; i++)
   {
+    cout<<"Move "<<i<<endl;
+    cout<<"Piece: "<<move->piece<<endl;
+    
+    nextState[i].numPlayerPieces=0;
     makeNextState(nextState[i]);
+    cout<<nextState[i].numPlayerPieces<<endl;
     nextState[i].updateState(move);
     currentValue=nextState[i].MIN(depthLimit-1);
     if(currentValue>bestValue)
@@ -1337,6 +1363,23 @@ MoveList* State::DLM(int depthLimit)
     move=move->next;
   }
   
+  for(int i=0; i<numMoves; i++)
+  {
+    delete[] nextState[i].enemyPieces;
+    delete[] nextState[i].playerPieces;
+    
+    MoveList * tmp=legalMoves;
+    while(nextState[i].legalMoves != NULL)
+    {
+      tmp=nextState[i].legalMoves;
+      nextState[i].legalMoves=nextState[i].legalMoves->next;
+      delete tmp;
+    }
+  }
+  delete[] nextState;
+  
+  cout<<"Best Value: "<<bestValue<<endl;
+  
   return bestMove;
 }
 
@@ -1344,8 +1387,8 @@ int State::MAX(int depthLimit)
 {
   genMoves();
   
-  //If max has no moves, Max lost.
-  if(numMoves==0)
+  //If max has no moves AND in check, Max lost.
+  if(numMoves==0 && checkKing())
   {
     StateMatValue=-100;
     return StateMatValue;
@@ -1353,6 +1396,11 @@ int State::MAX(int depthLimit)
   if(depthLimit==0)
   {
     matAdvEval();
+    return StateMatValue;
+  }
+  if(checkDraw())
+  {
+    StateMatValue=0;
     return StateMatValue;
   }
   
@@ -1373,6 +1421,33 @@ int State::MAX(int depthLimit)
     move=move->next;
   }
   
+  
+  
+  for(int i=0; i<numMoves; i++)
+  {
+    delete[] nextState[i].enemyPieces;
+    delete[] nextState[i].playerPieces;
+    
+    MoveList * tmp=legalMoves;
+    while(nextState[i].legalMoves != NULL)
+    {
+      tmp=nextState[i].legalMoves;
+      nextState[i].legalMoves=nextState[i].legalMoves->next;
+      delete tmp;
+    }
+  }
+  delete[] nextState;
+  
+  MoveList * temp=legalMoves;
+  while(legalMoves != NULL)
+  {
+    temp=legalMoves;
+    legalMoves=legalMoves->next;
+    delete temp;
+  }
+  numMoves=0;
+  
+  
   return bestValue;
 }
 
@@ -1380,8 +1455,8 @@ int State::MIN(int depthLimit)
 {
   genMoves();
   
-  //If min has no moves, Max wins.
-  if(numMoves==0)
+  //If min has no moves AND in check, Max wins.
+  if(numMoves==0 && checkKing())
   {
     StateMatValue=100;
     return StateMatValue;
@@ -1389,6 +1464,11 @@ int State::MIN(int depthLimit)
   if(depthLimit==0)
   {
     matAdvEvalMIN();
+    return StateMatValue;
+  }
+  if(checkDraw())
+  {
+    StateMatValue=0;
     return StateMatValue;
   }
   
@@ -1401,7 +1481,7 @@ int State::MIN(int depthLimit)
   {
     makeNextState(nextState[i]);
     nextState[i].updateState(move);
-    currentValue=nextState[i].MIN(depthLimit-1);
+    currentValue=nextState[i].MAX(depthLimit-1);
     if(currentValue<bestValue)
     {
       bestValue=currentValue;
@@ -1409,10 +1489,36 @@ int State::MIN(int depthLimit)
     move=move->next;
   }
   
+  
+  
+  for(int i=0; i<numMoves; i++)
+  {
+    delete[] nextState[i].enemyPieces;
+    delete[] nextState[i].playerPieces;
+    
+    MoveList * tmp=legalMoves;
+    while(nextState[i].legalMoves != NULL)
+    {
+      tmp=nextState[i].legalMoves;
+      nextState[i].legalMoves=nextState[i].legalMoves->next;
+      delete tmp;
+    }
+  }
+  delete[] nextState;
+  
+  MoveList * temp=legalMoves;
+  while(legalMoves != NULL)
+  {
+    temp=legalMoves;
+    legalMoves=legalMoves->next;
+    delete temp;
+  }
+  numMoves=0;
+  
   return bestValue;
 }
 
-void State::makeNextState(State targetState)
+void State::makeNextState(State & targetState)
 {
   targetState.numPlayerPieces=numEnemyPieces;
   targetState.numEnemyPieces=numPlayerPieces;
@@ -1457,18 +1563,44 @@ void State::makeNextState(State targetState)
   
   targetState.legalMoves=NULL;
   targetState.numMoves=0;
+  
+  targetState.boringPly=boringPly;
+  for(int i=0; i<16; i++)
+  {
+    targetState.history[i].toRank=history[i].toRank;
+    targetState.history[i].fromRank=history[i].fromRank;
+    targetState.history[i].toFile=history[i].toFile;
+    targetState.history[i].fromFile=history[i].fromFile;
+    targetState.history[i].piece=history[i].piece;
+  }
 }
 
 void State::updateState(MoveList* move)
 {
   passant=false;
+  
   //Passant update
-  if(playerPieces[move->piece].type=="Pawn" && move->toRank==playerPieces[move->piece].rank+forward*2)
+  if(playerPieces[move->piece].type=="Pawn" 
+  && move->toRank==playerPieces[move->piece].rank+forward*2)
   {
     passant=true;
     rankP=move->toRank-forward;
     fileP=move->toFile;
     passantTarget=move->piece;
+  }
+  
+  if(playerPieces[move->piece].type=="Pawn" || move->promotionType!="" || move->isCapture)
+  {
+    boringPly=0;
+  }
+  else
+  {
+    boringPly++;
+  }
+  
+  if(move->promotionType!="")
+  {
+    playerPieces[move->piece].type=move->promotionType;
   }
   
   playerPieces[move->piece].file=move->toFile;//Update own information
@@ -1482,11 +1614,124 @@ void State::updateState(MoveList* move)
 
   if(move->isCapture)
   {
-      enemyPieces[move->target].captured=true;
+    enemyPieces[move->target].captured=true;
   }
+  
+  for(int i=0; i<15; i++)
+  {
+    history[i+1].toRank=history[i].toRank;
+    history[i+1].fromRank=history[i].fromRank;
+    history[i+1].toFile=history[i].toFile;
+    history[i+1].fromFile=history[i].fromFile;
+    history[i+1].piece=history[i].piece;
+  }
+  
+  history[0].toRank  =move->toRank;
+  history[0].fromRank=move->fromRank;
+  history[0].toFile  =move->toFile;
+  history[0].fromFile=move->fromFile;
+  history[0].piece   =move->piece;
 }
 
-
+bool State::checkDraw()
+{
+  //stalemate
+  if(numMoves==0 && ! checkKing())
+  {
+    return true;
+  }
+  //Insufficient Materials
+  int pBish, eBish, knight, pBColor, eBColor, other;
+  pBish =0;
+  eBish =0;
+  knight=0;
+  other =0;
+  for(int i=0; i<numPlayerPieces; i++)
+  {
+    if(playerPieces[i].captured!=true)
+    {
+      if(playerPieces[i].type=="Pawn" && playerPieces[i].type=="Rook" && playerPieces[i].type=="Queen")
+      {
+        other++;
+      }
+      if(playerPieces[i].type=="Knight")
+      {
+        knight++;
+      }
+      if(playerPieces[i].type=="Bishop")
+      {
+        pBish++;
+        pBColor= (playerPieces[i].rank + (playerPieces[i].file[0]-'a'))%2;
+      }
+    }
+  }
+  for(int i=0; i<numEnemyPieces; i++)
+  {
+    if(enemyPieces[i].captured!=true)
+    {
+      if(enemyPieces[i].type=="Pawn" && enemyPieces[i].type=="Rook" && enemyPieces[i].type=="Queen")
+      {
+        other++;
+      }
+      if(enemyPieces[i].type=="Knight")
+      {
+        knight++;
+      }
+      if(enemyPieces[i].type=="Bishop")
+      {
+        eBish++;
+        eBColor= (enemyPieces[i].rank + (enemyPieces[i].file[0]-'a'))%2;
+      }
+    }
+  }
+  if(other==0)
+  {
+    if(knight==0 && eBish==0 && pBish==0)
+    {
+      return true;
+    }
+    if(knight==1 && eBish==0 && pBish==0)
+    {
+      return true;
+    }
+    if(knight==0 && eBish==1 && pBish==0)
+    {
+      return true;
+    }
+    if(knight==0 && eBish==0 && pBish==1)
+    {
+      return true;
+    }
+    if(knight==0 && eBish==1 && pBish==1 && eBColor==pBColor)
+    {
+      return true;
+    }
+  }
+  //50 move rule
+  if(boringPly>=100)
+  {
+    return true;
+  }
+  
+  bool repeat=true;
+  //Simple repetition
+  if(boringPly>=16)
+  {
+    for( int i=0; i<8; i++)
+    {
+      if(history[i].toRank!=history[i+8].toRank || history[i].toFile!=history[i+8].toFile || history[i].fromRank!=history[i+8].fromRank || history[i].fromFile!=history[i+8].fromFile)
+      {
+        repeat=false;
+      }
+    }
+    if(repeat)
+    {
+      return true;
+    }
+  }
+  
+  return false;
+}
 
 
 

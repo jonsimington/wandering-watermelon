@@ -17,6 +17,8 @@ class MoveList
   int piece;
   int toRank;
   string toFile;
+  int fromRank; //
+  string fromFile;//
   int target;
   bool isCapture;
   string promotionType;
@@ -52,6 +54,8 @@ class State
   int numEnemyPieces;
   int forward;
   int StateMatValue;
+  int boringPly;
+  MoveList history [16];
   
   bool passant;
   int rankP;
@@ -81,8 +85,9 @@ class State
   int MAX(int depthLimit);
   int MIN(int depthLimit);
   
-  void makeNextState(State targetState);
+  void makeNextState(State & targetState);
   void updateState(MoveList* move);
+  bool checkDraw();
 };
 
 }
