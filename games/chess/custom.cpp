@@ -61,6 +61,55 @@ void State::matAdvEval()
   StateMatValue=count;
 }
 
+void State::matAdvEvalMIN()
+{
+  int count=0;
+  for(int p=0; p<numPlayerPieces; p++)
+  {
+    if(playerPieces[p].captured!=true)
+    {
+      if( playerPieces[p].type=="Pawn")
+      {
+        count=count-1;
+      }
+      if( playerPieces[p].type=="Knight" || playerPieces[p].type=="Bishop")
+      {
+        count=count-3;
+      }
+      if( playerPieces[p].type=="Rook")
+      {
+        count=count-5;
+      }
+      if( playerPieces[p].type=="Queen")
+      {
+        count=count-9;
+      }
+    }
+  }
+  for(int p=0; p<numEnemyPieces; p++)
+  {
+    if(enemyPieces[p].captured!=true)
+    {
+      if( enemyPieces[p].type=="Pawn")
+      {
+        count=count+1;
+      }
+      if( enemyPieces[p].type=="Knight" || enemyPieces[p].type=="Bishop")
+      {
+        count=count+3;
+      }
+      if( enemyPieces[p].type=="Rook")
+      {
+        count=count+5;
+      }
+      if( enemyPieces[p].type=="Queen")
+      {
+        count=count+9;
+      }
+    }
+  }
+  StateMatValue=count;
+}
 
 //Handles reading FEN string
 void State::fen(string fen)
@@ -760,9 +809,9 @@ void State::castleCheck(int k)
                           playerPieces[k].file=fileOld[0]-2;
                           if( ! checkKing()) //two over
                           {
-                            playerPieces[k].addMove(playerPieces[k].rank, fileOld[0]-2, false, 0, "");
-                            playerPieces[k].legalMoves->isCastle=+1;
-                            playerPieces[k].legalMoves->rookIndex=r;
+                            addMove(k, playerPieces[k].rank, fileOld[0]-2, false, 0, "");
+                            legalMoves->isCastle=+1;
+                            legalMoves->rookIndex=r;
                           }
                         }
                         playerPieces[k].file=fileOld;
@@ -795,9 +844,9 @@ void State::castleCheck(int k)
                           playerPieces[k].file=fileOld[0]+2;
                           if( ! checkKing()) //two over
                           {
-                            playerPieces[k].addMove(playerPieces[k].rank, fileOld[0]+2, false, 0, "");
-                            playerPieces[k].legalMoves->isCastle=-1;
-                            playerPieces[k].legalMoves->rookIndex=r;
+                            addMove(k, playerPieces[k].rank, fileOld[0]+2, false, 0, "");
+                            legalMoves->isCastle=-1;
+                            legalMoves->rookIndex=r;
                           }
                         }
                         playerPieces[k].file=fileOld;
@@ -840,14 +889,14 @@ void State::validMoveCheck(int p, int toRank, char toFile, bool capture, int e)
   {
     if(playerPieces[p].type=="Pawn" && (toRank==1 || toRank==8))
     {
-      playerPieces[p].addMove(toRank, toFile, capture, e, "Queen");
-      playerPieces[p].addMove(toRank, toFile, capture, e, "Rook");
-      playerPieces[p].addMove(toRank, toFile, capture, e, "Bishop");
-      playerPieces[p].addMove(toRank, toFile, capture, e, "Knight");
+      addMove(p, toRank, toFile, capture, e, "Queen");
+      addMove(p, toRank, toFile, capture, e, "Rook");
+      addMove(p, toRank, toFile, capture, e, "Bishop");
+      addMove(p, toRank, toFile, capture, e, "Knight");
     }
     else
     {
-      playerPieces[p].addMove(toRank, toFile, capture, e, "");
+      addMove(p, toRank, toFile, capture, e, "");
     }
     
   }
@@ -861,14 +910,33 @@ void State::validMoveCheck(int p, int toRank, char toFile, bool capture, int e)
   }
 }
 
+/*
 //Adds a move to a pieces move list.
-void MyPiece::addMove(int toRank, char toFile, bool capture, int e, string type)
+void MyPiece::addMove(int p, int toRank, char toFile, bool capture, int e, string type)
 {
   MoveList * tmp;
   tmp= new MoveList;
   tmp->toFile=toFile;
   tmp->toRank=toRank;
   tmp->target=e;
+  tmp->piece=p;
+  tmp->isCapture=capture;
+  tmp->isCastle=false;
+  tmp->promotionType=type;
+  tmp->next=legalMoves;
+  legalMoves=tmp;
+  numMoves++;
+}*/
+
+//Adds a move to a pieces move list.
+void State::addMove(int p, int toRank, char toFile, bool capture, int e, string type)
+{
+  MoveList * tmp;
+  tmp= new MoveList;
+  tmp->toFile=toFile;
+  tmp->toRank=toRank;
+  tmp->target=e;
+  tmp->piece=p;
   tmp->isCapture=capture;
   tmp->isCastle=false;
   tmp->promotionType=type;
@@ -1245,6 +1313,180 @@ bool State::checkKing()
   
   return false;
 }
+
+MoveList* State::DLM(int depthLimit)
+{
+  genMoves();
+  
+  int bestValue=-101;
+  int currentValue;
+  MoveList* bestMove;
+  
+  State* nextState=new State[numMoves];
+  MoveList * move=legalMoves;
+  for(int i=0; i<numMoves; i++)
+  {
+    makeNextState(nextState[i]);
+    nextState[i].updateState(move);
+    currentValue=nextState[i].MIN(depthLimit-1);
+    if(currentValue>bestValue)
+    {
+      bestValue=currentValue;
+      bestMove=move;
+    }
+    move=move->next;
+  }
+  
+  return bestMove;
+}
+
+int State::MAX(int depthLimit)
+{
+  genMoves();
+  
+  //If max has no moves, Max lost.
+  if(numMoves==0)
+  {
+    StateMatValue=-100;
+    return StateMatValue;
+  }
+  if(depthLimit==0)
+  {
+    matAdvEval();
+    return StateMatValue;
+  }
+  
+  int bestValue=-101;
+  int currentValue;
+  
+  State* nextState=new State[numMoves];
+  MoveList * move=legalMoves;
+  for(int i=0; i<numMoves; i++)
+  {
+    makeNextState(nextState[i]);
+    nextState[i].updateState(move);
+    currentValue=nextState[i].MIN(depthLimit-1);
+    if(currentValue>bestValue)
+    {
+      bestValue=currentValue;
+    }
+    move=move->next;
+  }
+  
+  return bestValue;
+}
+
+int State::MIN(int depthLimit)
+{
+  genMoves();
+  
+  //If min has no moves, Max wins.
+  if(numMoves==0)
+  {
+    StateMatValue=100;
+    return StateMatValue;
+  }
+  if(depthLimit==0)
+  {
+    matAdvEvalMIN();
+    return StateMatValue;
+  }
+  
+  int bestValue=101;
+  int currentValue;
+  
+  State* nextState=new State[numMoves];
+  MoveList * move=legalMoves;
+  for(int i=0; i<numMoves; i++)
+  {
+    makeNextState(nextState[i]);
+    nextState[i].updateState(move);
+    currentValue=nextState[i].MIN(depthLimit-1);
+    if(currentValue<bestValue)
+    {
+      bestValue=currentValue;
+    }
+    move=move->next;
+  }
+  
+  return bestValue;
+}
+
+void State::makeNextState(State targetState)
+{
+  targetState.numPlayerPieces=numEnemyPieces;
+  targetState.numEnemyPieces=numPlayerPieces;
+  targetState.forward=-forward;
+  
+  targetState.playerPieces= new MyPiece[targetState.numPlayerPieces];
+  for(int i=0; i<targetState.numPlayerPieces; i++)
+  {
+    
+    targetState.playerPieces[i].captured=enemyPieces[i].captured;
+    targetState.playerPieces[i].color=enemyPieces[i].color;
+    targetState.playerPieces[i].rank=enemyPieces[i].rank;
+    targetState.playerPieces[i].file=enemyPieces[i].file;
+    targetState.playerPieces[i].type=enemyPieces[i].type;
+    targetState.playerPieces[i].moved=enemyPieces[i].moved;
+    targetState.playerPieces[i].pieceRef=enemyPieces[i].pieceRef;
+  }
+  
+  
+  targetState.enemyPieces= new MyPiece[targetState.numEnemyPieces];
+  for(int i=0; i<targetState.numEnemyPieces; i++)
+  {
+    targetState.enemyPieces[i].captured=playerPieces[i].captured;
+    targetState.enemyPieces[i].color=playerPieces[i].color;
+    targetState.enemyPieces[i].rank=playerPieces[i].rank;
+    targetState.enemyPieces[i].file=playerPieces[i].file;
+    targetState.enemyPieces[i].type=playerPieces[i].type;
+    targetState.enemyPieces[i].moved=playerPieces[i].moved;
+    targetState.enemyPieces[i].pieceRef=playerPieces[i].pieceRef;
+  }
+  
+  
+  targetState.passant=passant;
+  targetState.rankP=rankP;
+  targetState.fileP=fileP;
+  targetState.passantTarget=passantTarget;
+  
+  targetState.castleK=castleK;
+  targetState.castleQ=castleQ;
+  targetState.castlek=castlek;
+  targetState.castleq=castleq;
+  
+  targetState.legalMoves=NULL;
+  targetState.numMoves=0;
+}
+
+void State::updateState(MoveList* move)
+{
+  passant=false;
+  //Passant update
+  if(playerPieces[move->piece].type=="Pawn" && move->toRank==playerPieces[move->piece].rank+forward*2)
+  {
+    passant=true;
+    rankP=move->toRank-forward;
+    fileP=move->toFile;
+    passantTarget=move->piece;
+  }
+  
+  playerPieces[move->piece].file=move->toFile;//Update own information
+  playerPieces[move->piece].rank=move->toRank;
+  playerPieces[move->piece].moved=true;
+  if(move->isCastle!=0)
+  {
+    playerPieces[move->rookIndex].file=playerPieces[move->piece].file[0]+move->isCastle;
+  }
+  
+
+  if(move->isCapture)
+  {
+      enemyPieces[move->target].captured=true;
+  }
+}
+
+
 
 
 

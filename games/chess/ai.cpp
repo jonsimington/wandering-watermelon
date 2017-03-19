@@ -187,6 +187,7 @@ bool AI::run_turn()
   currentState->genMoves(); //Generate all moves
   
   /*
+  //Random Move Selection
   int randPiece=rand()%currentState->numPlayerPieces; //Select a piece
   while(currentState->playerPieces[randPiece].numMoves==0 || currentState->playerPieces[randPiece].captured==true)
   {
@@ -203,6 +204,7 @@ bool AI::run_turn()
   */
   
   /*
+  //Prints all moves for selected Piece. OUTDATED.
   MoveList * printMove= currentState->playerPieces[randPiece].legalMoves;
   cout<<currentState->playerPieces[randPiece].type<<" at "<<currentState->playerPieces[randPiece].rank<<" "<<currentState->playerPieces[randPiece].file<<" could move to ";
   while(printMove != NULL)
@@ -251,7 +253,10 @@ bool AI::run_turn()
   {
     currentState->playerPieces[randPiece].pieceRef->move(selectedMove->toFile, selectedMove->toRank);
   }
+  */
   
+  /*
+  //Passant update
   if(currentState->playerPieces[randPiece].type=="Pawn" && selectedMove->toRank==currentState->playerPieces[randPiece].rank+currentState->forward*2)
   {
     currentState->passant=true;
@@ -271,10 +276,12 @@ bool AI::run_turn()
 
   if(selectedMove->isCapture)
   {
-      currentState->enemyPieces[selectedMove->target].captured=true;
+    currentState->enemyPieces[selectedMove->target].captured=true;
   }
   
   */
+  
+  /*
   MoveList * temp;
   
   for( int i=0; i<currentState->numPlayerPieces; i++)
@@ -286,7 +293,7 @@ bool AI::run_turn()
       delete temp;
     }
     currentState->playerPieces[i].numMoves=0;
-  }
+  }*/
   
   
   return true; // to signify we are done with our turn.

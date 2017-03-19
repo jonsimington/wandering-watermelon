@@ -14,6 +14,7 @@ namespace chess
 class MoveList
 {
   public:
+  int piece;
   int toRank;
   string toFile;
   int target;
@@ -35,11 +36,11 @@ class MyPiece
   string type;
   bool moved;
   Piece pieceRef;
-  MoveList * legalMoves;
-  int numMoves;
+  //MoveList * legalMoves;
+  //int numMoves;
   
-  MyPiece(){legalMoves=NULL; numMoves=0; moved=false;}
-  void addMove(int toRank, char toFile, bool capture, int e, string promotion);
+  MyPiece(){ moved=false;}//legalMoves=NULL; numMoves=0;
+  //void addMove(int p, int toRank, char toFile, bool capture, int e, string promotion);
 };
 
 class State
@@ -62,6 +63,10 @@ class State
   bool castlek;
   bool castleq;
   
+  MoveList * legalMoves;
+  int numMoves;
+  void addMove(int p, int toRank, char toFile, bool capture, int e, string promotion);
+  
   int checkSpace(int checkRank, char checkFile, int & target);
   bool checkKing();
   void genMoves();
@@ -70,6 +75,14 @@ class State
   void enPassant(int pawn);
   void fen(string fen);
   void matAdvEval();
+  void matAdvEvalMIN();
+  
+  MoveList* DLM(int depthLimit);
+  int MAX(int depthLimit);
+  int MIN(int depthLimit);
+  
+  void makeNextState(State targetState);
+  void updateState(MoveList* move);
 };
 
 }
