@@ -69,7 +69,7 @@ class State
   
   MoveList * legalMoves;
   int numMoves;
-  void addMove(int p, int toRank, char toFile, bool capture, int e, string promotion);
+  void addMove(int p, int toRank, char toFile, int fromRank, char fromFile, bool capture, int e, string promotion);
   
   int checkSpace(int checkRank, char checkFile, int & target);
   bool checkKing();

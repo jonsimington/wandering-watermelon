@@ -30,7 +30,11 @@ void AI::start()
   // This is a good place to initialize any variables
   srand(time(NULL));
   
-  maxDepthLimit=3;
+  maxDepthLimit=1;
+  if(get_setting("DEPTH")!="")
+  {
+    maxDepthLimit=stoi(get_setting("DEPTH"));
+  }
   
   currentState= new State();
   currentState->numPlayerPieces=player->pieces.size();
@@ -90,6 +94,13 @@ void AI::game_updated()
 /// <param name="reason">An explanation for why you either won or lost</param>
 void AI::ended(bool won, const std::string& reason)
 {
+  cout<<endl;
+  cout<<"Boring Ply="<<currentState->boringPly<<endl;
+  for( int i=0; i<8; i++)
+  {
+    cout<<"Piece #"<<currentState->history[i].piece<<" move from "<<currentState->history[i].fromRank<<", "<<currentState->history[i].fromFile<<" to "<<currentState->history[i].toRank<<", "<<currentState->history[i].toFile<<endl;
+  }
+  
   delete[] currentState->enemyPieces;
   delete[] currentState->playerPieces;
   delete currentState;
@@ -181,13 +192,13 @@ bool AI::run_turn()
       currentState->enemyPieces[e].type=game->moves[game->moves.size() - 1]->promotion;
     }
     
-    for(int i=0; i<15; i++)
+    for(int i=15; i>0; i--)
     {
-      currentState->history[i+1].toRank=currentState->history[i].toRank;
-      currentState->history[i+1].fromRank=currentState->history[i].fromRank;
-      currentState->history[i+1].toFile=currentState->history[i].toFile;
-      currentState->history[i+1].fromFile=currentState->history[i].fromFile;
-      currentState->history[i+1].piece=currentState->history[i].piece;
+      currentState->history[i].toRank  =currentState->history[i-1].toRank;
+      currentState->history[i].fromRank=currentState->history[i-1].fromRank;
+      currentState->history[i].toFile  =currentState->history[i-1].toFile;
+      currentState->history[i].fromFile=currentState->history[i-1].fromFile;
+      currentState->history[i].piece   =currentState->history[i-1].piece;
     }
     
     currentState->history[0].toRank  =game->moves[game->moves.size() - 1]->to_rank;
@@ -195,6 +206,14 @@ bool AI::run_turn()
     currentState->history[0].toFile  =game->moves[game->moves.size() - 1]->to_file;
     currentState->history[0].fromFile=game->moves[game->moves.size() - 1]->from_file;
     currentState->history[0].piece   =e;
+    
+    /*
+    cout<<"Boring Ply="<<currentState->boringPly<<endl;
+    for( int i=0; i<8; i++)
+    {
+      cout<<"Piece #"<<currentState->history[i].piece<<" move from "<<currentState->history[i].fromRank<<", "<<currentState->history[i].fromFile<<" to "<<currentState->history[i].toRank<<", "<<currentState->history[i].toFile<<endl;
+    }
+    */
     
     if(currentState->enemyPieces[e].type=="Pawn" || game->moves[game->moves.size() - 1]->promotion!="" || game->moves[game->moves.size() - 1]->captured!=NULL)
     {

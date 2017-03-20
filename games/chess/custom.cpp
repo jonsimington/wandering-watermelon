@@ -58,7 +58,7 @@ void State::matAdvEval()
       }
     }
   }
-  StateMatValue=count;
+  StateMatValue=-count;
 }
 
 void State::matAdvEvalMIN()
@@ -108,7 +108,7 @@ void State::matAdvEvalMIN()
       }
     }
   }
-  StateMatValue=count;
+  StateMatValue=-count;
 }
 
 //Handles reading FEN string
@@ -809,7 +809,7 @@ void State::castleCheck(int k)
                           playerPieces[k].file=fileOld[0]-2;
                           if( ! checkKing()) //two over
                           {
-                            addMove(k, playerPieces[k].rank, fileOld[0]-2, false, 0, "");
+                            addMove(k, playerPieces[k].rank, fileOld[0]-2, playerPieces[k].rank, fileOld[0], false, 0, "");
                             legalMoves->isCastle=+1;
                             legalMoves->rookIndex=r;
                           }
@@ -844,7 +844,7 @@ void State::castleCheck(int k)
                           playerPieces[k].file=fileOld[0]+2;
                           if( ! checkKing()) //two over
                           {
-                            addMove(k, playerPieces[k].rank, fileOld[0]+2, false, 0, "");
+                            addMove(k, playerPieces[k].rank, fileOld[0]+2, playerPieces[k].rank, fileOld[0], false, 0, "");
                             legalMoves->isCastle=-1;
                             legalMoves->rookIndex=r;
                           }
@@ -889,14 +889,14 @@ void State::validMoveCheck(int p, int toRank, char toFile, bool capture, int e)
   {
     if(playerPieces[p].type=="Pawn" && (toRank==1 || toRank==8))
     {
-      addMove(p, toRank, toFile, capture, e, "Queen");
-      addMove(p, toRank, toFile, capture, e, "Rook");
-      addMove(p, toRank, toFile, capture, e, "Bishop");
-      addMove(p, toRank, toFile, capture, e, "Knight");
+      addMove(p, toRank, toFile, rankStore, fileStore[0], capture, e, "Queen");
+      addMove(p, toRank, toFile, rankStore, fileStore[0], capture, e, "Rook");
+      addMove(p, toRank, toFile, rankStore, fileStore[0], capture, e, "Bishop");
+      addMove(p, toRank, toFile, rankStore, fileStore[0], capture, e, "Knight");
     }
     else
     {
-      addMove(p, toRank, toFile, capture, e, "");
+      addMove(p, toRank, toFile, rankStore, fileStore[0], capture, e, "");
     }
     
   }
@@ -929,14 +929,14 @@ void MyPiece::addMove(int p, int toRank, char toFile, bool capture, int e, strin
 }*/
 
 //Adds a move to a pieces move list.
-void State::addMove(int p, int toRank, char toFile, bool capture, int e, string type)
+void State::addMove(int p, int toRank, char toFile, int fromRank, char fromFile, bool capture, int e, string type)
 {
   MoveList * tmp;
   tmp= new MoveList;
   tmp->toFile=toFile;
   tmp->toRank=toRank;
-  tmp->fromFile=playerPieces[p].file;
-  tmp->fromRank=playerPieces[p].rank;
+  tmp->fromFile=fromFile;
+  tmp->fromRank=fromRank;
   tmp->target=e;
   tmp->piece=p;
   tmp->isCapture=capture;
@@ -972,6 +972,22 @@ bool State::checkKing()
   if(!kingFound)
   {
     cout<<"KING NOT FOUND!"<<endl;
+    for( int i=0; i<numPlayerPieces; i++)
+    {
+      if(playerPieces[i].captured!=true)
+      {
+        cout<<"My "<<playerPieces[i].type<<" at "<<playerPieces[i].rank<<" "<<playerPieces[i].file<<endl;
+      }
+    }
+    
+    for( int i=0; i<numEnemyPieces; i++)
+    {
+      if(enemyPieces[i].captured!=true)
+      {
+        cout<<"Enemy "<<enemyPieces[i].type<<" at "<<enemyPieces[i].rank<<" "<<enemyPieces[i].file<<endl;
+      }
+    }
+    throw "fuck it";
     return false;
   }
   
@@ -1337,7 +1353,7 @@ MoveList* State::DLM(int depthLimit)
     }
   }*/
   
-  cout<<numMoves<<" generated"<<endl;
+  //cout<<numMoves<<" generated"<<endl;
   
   int bestValue=-101;
   int currentValue;
@@ -1347,12 +1363,12 @@ MoveList* State::DLM(int depthLimit)
   MoveList * move=legalMoves;
   for(int i=0; i<numMoves; i++)
   {
-    cout<<"Move "<<i<<endl;
-    cout<<"Piece: "<<move->piece<<endl;
+    //cout<<"Move "<<i<<endl;
+    //cout<<"Piece: "<<move->piece<<endl;
     
     nextState[i].numPlayerPieces=0;
     makeNextState(nextState[i]);
-    cout<<nextState[i].numPlayerPieces<<endl;
+    //cout<<nextState[i].numPlayerPieces<<endl;
     nextState[i].updateState(move);
     currentValue=nextState[i].MIN(depthLimit-1);
     if(currentValue>bestValue)
@@ -1393,16 +1409,20 @@ int State::MAX(int depthLimit)
     StateMatValue=-100;
     return StateMatValue;
   }
-  if(depthLimit==0)
-  {
-    matAdvEval();
-    return StateMatValue;
-  }
   if(checkDraw())
   {
     StateMatValue=0;
+    cout<<"Draw with "<<depthLimit<<" remaining"<<endl;
     return StateMatValue;
   }
+  if(depthLimit==0)
+  {
+    matAdvEval();
+    //cout<<"Max reached depthlimit. Value: "<<StateMatValue<<endl;
+    
+    return StateMatValue;
+  }
+  
   
   int bestValue=-101;
   int currentValue;
@@ -1447,7 +1467,7 @@ int State::MAX(int depthLimit)
   }
   numMoves=0;
   
-  
+  //cout<<"Max at "<<depthLimit<<" found value: "<<bestValue<<endl;
   return bestValue;
 }
 
@@ -1461,16 +1481,19 @@ int State::MIN(int depthLimit)
     StateMatValue=100;
     return StateMatValue;
   }
-  if(depthLimit==0)
-  {
-    matAdvEvalMIN();
-    return StateMatValue;
-  }
   if(checkDraw())
   {
     StateMatValue=0;
+    cout<<"Draw with "<<depthLimit<<" remaining"<<endl;
     return StateMatValue;
   }
+  if(depthLimit==0)
+  {
+    matAdvEvalMIN();
+    //cout<<"Min reached depthlimit. Value: "<<StateMatValue<<endl;
+    return StateMatValue;
+  }
+  
   
   int bestValue=101;
   int currentValue;
@@ -1515,6 +1538,7 @@ int State::MIN(int depthLimit)
   }
   numMoves=0;
   
+  //cout<<"Min at "<<depthLimit<<" found value: "<<bestValue<<endl;
   return bestValue;
 }
 
@@ -1565,7 +1589,7 @@ void State::makeNextState(State & targetState)
   targetState.numMoves=0;
   
   targetState.boringPly=boringPly;
-  for(int i=0; i<16; i++)
+  for(int i=0; i<15; i++)
   {
     targetState.history[i].toRank=history[i].toRank;
     targetState.history[i].fromRank=history[i].fromRank;
@@ -1580,8 +1604,7 @@ void State::updateState(MoveList* move)
   passant=false;
   
   //Passant update
-  if(playerPieces[move->piece].type=="Pawn" 
-  && move->toRank==playerPieces[move->piece].rank+forward*2)
+  if(playerPieces[move->piece].type=="Pawn" && move->toRank==playerPieces[move->piece].rank+forward*2)
   {
     passant=true;
     rankP=move->toRank-forward;
@@ -1589,7 +1612,7 @@ void State::updateState(MoveList* move)
     passantTarget=move->piece;
   }
   
-  if(playerPieces[move->piece].type=="Pawn" || move->promotionType!="" || move->isCapture)
+  if(playerPieces[move->piece].type=="Pawn" || move->isCapture)
   {
     boringPly=0;
   }
@@ -1598,7 +1621,7 @@ void State::updateState(MoveList* move)
     boringPly++;
   }
   
-  if(move->promotionType!="")
+  if(move->promotionType!="" && playerPieces[move->piece].type=="Pawn")
   {
     playerPieces[move->piece].type=move->promotionType;
   }
@@ -1617,13 +1640,13 @@ void State::updateState(MoveList* move)
     enemyPieces[move->target].captured=true;
   }
   
-  for(int i=0; i<15; i++)
+  for(int i=15; i>0; i--)
   {
-    history[i+1].toRank=history[i].toRank;
-    history[i+1].fromRank=history[i].fromRank;
-    history[i+1].toFile=history[i].toFile;
-    history[i+1].fromFile=history[i].fromFile;
-    history[i+1].piece=history[i].piece;
+    history[i].toRank  =history[i-1].toRank;
+    history[i].fromRank=history[i-1].fromRank;
+    history[i].toFile  =history[i-1].toFile;
+    history[i].fromFile=history[i-1].fromFile;
+    history[i].piece   =history[i-1].piece;
   }
   
   history[0].toRank  =move->toRank;
@@ -1631,6 +1654,15 @@ void State::updateState(MoveList* move)
   history[0].toFile  =move->toFile;
   history[0].fromFile=move->fromFile;
   history[0].piece   =move->piece;
+  
+  /*
+  cout<<"Boring Ply="<<boringPly<<endl;
+  cout<<" move from "<<move->fromRank<<", "<<move->fromFile<<" to "<<move->toRank<<", "<<move->toFile<<endl;
+  for( int i=0; i<8; i++)
+  {
+    cout<<"Piece #"<<history[i].piece<<" move from "<<history[i].fromRank<<", "<<history[i].fromFile<<" to "<<history[i].toRank<<", "<<history[i].toFile<<endl;
+  }
+  */
 }
 
 bool State::checkDraw()
@@ -1715,11 +1747,11 @@ bool State::checkDraw()
   
   bool repeat=true;
   //Simple repetition
-  if(boringPly>=16)
+  if(boringPly>=8)
   {
-    for( int i=0; i<8; i++)
+    for( int i=0; i<4; i++)
     {
-      if(history[i].toRank!=history[i+8].toRank || history[i].toFile!=history[i+8].toFile || history[i].fromRank!=history[i+8].fromRank || history[i].fromFile!=history[i+8].fromFile)
+      if( enemyPieces[history[i].piece].type!=enemyPieces[history[i+4].piece].type|| history[i].toRank!=history[i+4].toRank || history[i].toFile!=history[i+4].toFile || history[i].fromRank!=history[i+4].fromRank || history[i].fromFile!=history[i+4].fromFile)
       {
         repeat=false;
       }
