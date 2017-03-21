@@ -61,6 +61,7 @@ void State::matAdvEval()
   StateMatValue=-count;
 }
 
+//Finds the material value for a state. Inverted due to how data is handled in MIN()
 void State::matAdvEvalMIN()
 {
   int count=0;
@@ -910,23 +911,7 @@ void State::validMoveCheck(int p, int toRank, char toFile, bool capture, int e)
   }
 }
 
-/*
-//Adds a move to a pieces move list.
-void MyPiece::addMove(int p, int toRank, char toFile, bool capture, int e, string type)
-{
-  MoveList * tmp;
-  tmp= new MoveList;
-  tmp->toFile=toFile;
-  tmp->toRank=toRank;
-  tmp->target=e;
-  tmp->piece=p;
-  tmp->isCapture=capture;
-  tmp->isCastle=false;
-  tmp->promotionType=type;
-  tmp->next=legalMoves;
-  legalMoves=tmp;
-  numMoves++;
-}*/
+
 
 //Adds a move to a pieces move list.
 void State::addMove(int p, int toRank, char toFile, int fromRank, char fromFile, bool capture, int e, string type)
@@ -972,22 +957,8 @@ bool State::checkKing()
   if(!kingFound)
   {
     cout<<"KING NOT FOUND!"<<endl;
-    for( int i=0; i<numPlayerPieces; i++)
-    {
-      if(playerPieces[i].captured!=true)
-      {
-        cout<<"My "<<playerPieces[i].type<<" at "<<playerPieces[i].rank<<" "<<playerPieces[i].file<<endl;
-      }
-    }
-    
-    for( int i=0; i<numEnemyPieces; i++)
-    {
-      if(enemyPieces[i].captured!=true)
-      {
-        cout<<"Enemy "<<enemyPieces[i].type<<" at "<<enemyPieces[i].rank<<" "<<enemyPieces[i].file<<endl;
-      }
-    }
-    throw "fuck it";
+    //throw "tantrum"; //If this throws, everything will die.
+    //Fun Fact: I had a bug where the King was getting "promoted" in my internal datastructures
     return false;
   }
   
@@ -1332,28 +1303,11 @@ bool State::checkKing()
   return false;
 }
 
+//Recursive Depth-Limited Minimax
 MoveList* State::DLM(int depthLimit)
 {
   genMoves();
   
-  /*
-  for( int i=0; i<numPlayerPieces; i++)
-  {
-    if(playerPieces[i].captured!=true)
-    {
-      cout<<"My "<<playerPieces[i].type<<" at "<<currentState->playerPieces[i].rank<<" "<<currentState->playerPieces[i].file<<endl;
-    }
-  }
-  
-  for( int i=0; i<currentState->numEnemyPieces; i++)
-  {
-    if(currentState->enemyPieces[i].captured!=true)
-    {
-      cout<<"Enemy "<<currentState->enemyPieces[i].type<<" at "<<currentState->enemyPieces[i].rank<<" "<<currentState->enemyPieces[i].file<<endl;
-    }
-  }*/
-  
-  //cout<<numMoves<<" generated"<<endl;
   
   int bestValue=-101;
   int currentValue;
@@ -1363,18 +1317,22 @@ MoveList* State::DLM(int depthLimit)
   MoveList * move=legalMoves;
   for(int i=0; i<numMoves; i++)
   {
-    //cout<<"Move "<<i<<endl;
-    //cout<<"Piece: "<<move->piece<<endl;
-    
     nextState[i].numPlayerPieces=0;
     makeNextState(nextState[i]);
-    //cout<<nextState[i].numPlayerPieces<<endl;
     nextState[i].updateState(move);
     currentValue=nextState[i].MIN(depthLimit-1);
     if(currentValue>bestValue)
     {
       bestValue=currentValue;
       bestMove=move;
+    }
+    if(currentValue=bestValue)
+    {
+      int roll=rand()%2;
+      if(roll==0)
+      {
+        bestMove=move;
+      }
     }
     move=move->next;
   }
@@ -1394,7 +1352,6 @@ MoveList* State::DLM(int depthLimit)
   }
   delete[] nextState;
   
-  cout<<"Best Value: "<<bestValue<<endl;
   
   return bestMove;
 }
@@ -1412,14 +1369,11 @@ int State::MAX(int depthLimit)
   if(checkDraw())
   {
     StateMatValue=0;
-    cout<<"Draw with "<<depthLimit<<" remaining"<<endl;
     return StateMatValue;
   }
   if(depthLimit==0)
   {
     matAdvEval();
-    //cout<<"Max reached depthlimit. Value: "<<StateMatValue<<endl;
-    
     return StateMatValue;
   }
   
@@ -1467,7 +1421,6 @@ int State::MAX(int depthLimit)
   }
   numMoves=0;
   
-  //cout<<"Max at "<<depthLimit<<" found value: "<<bestValue<<endl;
   return bestValue;
 }
 
@@ -1484,13 +1437,11 @@ int State::MIN(int depthLimit)
   if(checkDraw())
   {
     StateMatValue=0;
-    cout<<"Draw with "<<depthLimit<<" remaining"<<endl;
     return StateMatValue;
   }
   if(depthLimit==0)
   {
     matAdvEvalMIN();
-    //cout<<"Min reached depthlimit. Value: "<<StateMatValue<<endl;
     return StateMatValue;
   }
   
@@ -1538,10 +1489,10 @@ int State::MIN(int depthLimit)
   }
   numMoves=0;
   
-  //cout<<"Min at "<<depthLimit<<" found value: "<<bestValue<<endl;
   return bestValue;
 }
 
+//Mostly a copy function. Swaps player and enemy pieces.
 void State::makeNextState(State & targetState)
 {
   targetState.numPlayerPieces=numEnemyPieces;
@@ -1599,6 +1550,7 @@ void State::makeNextState(State & targetState)
   }
 }
 
+//Applies a move to the state
 void State::updateState(MoveList* move)
 {
   passant=false;
@@ -1655,16 +1607,10 @@ void State::updateState(MoveList* move)
   history[0].fromFile=move->fromFile;
   history[0].piece   =move->piece;
   
-  /*
-  cout<<"Boring Ply="<<boringPly<<endl;
-  cout<<" move from "<<move->fromRank<<", "<<move->fromFile<<" to "<<move->toRank<<", "<<move->toFile<<endl;
-  for( int i=0; i<8; i++)
-  {
-    cout<<"Piece #"<<history[i].piece<<" move from "<<history[i].fromRank<<", "<<history[i].fromFile<<" to "<<history[i].toRank<<", "<<history[i].toFile<<endl;
-  }
-  */
+  
 }
 
+//Checks if a draw has occurred
 bool State::checkDraw()
 {
   //stalemate

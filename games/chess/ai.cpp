@@ -1,5 +1,6 @@
 // AI
 // This is where you build your AI
+// to fix push:  export GIT_SSH_COMMAND='ssh -o KexAlgorithms=+diffie-hellman-group1-sha1'
 
 #include "ai.hpp"
 
@@ -30,7 +31,8 @@ void AI::start()
   // This is a good place to initialize any variables
   srand(time(NULL));
   
-  maxDepthLimit=1;
+  //Default depth limit is two, can override
+  maxDepthLimit=2;
   if(get_setting("DEPTH")!="")
   {
     maxDepthLimit=stoi(get_setting("DEPTH"));
@@ -94,12 +96,6 @@ void AI::game_updated()
 /// <param name="reason">An explanation for why you either won or lost</param>
 void AI::ended(bool won, const std::string& reason)
 {
-  cout<<endl;
-  cout<<"Boring Ply="<<currentState->boringPly<<endl;
-  for( int i=0; i<8; i++)
-  {
-    cout<<"Piece #"<<currentState->history[i].piece<<" move from "<<currentState->history[i].fromRank<<", "<<currentState->history[i].fromFile<<" to "<<currentState->history[i].toRank<<", "<<currentState->history[i].toFile<<endl;
-  }
   
   delete[] currentState->enemyPieces;
   delete[] currentState->playerPieces;
@@ -116,7 +112,6 @@ bool AI::run_turn()
   
   if(game->moves.size() > 0) //Get updates based on last move
   {
-    //  game->moves[game->moves.size() - 1]->san ;
     int e=0;
     bool found=false;
     while(e<currentState->numEnemyPieces && ! found)
@@ -207,13 +202,7 @@ bool AI::run_turn()
     currentState->history[0].fromFile=game->moves[game->moves.size() - 1]->from_file;
     currentState->history[0].piece   =e;
     
-    /*
-    cout<<"Boring Ply="<<currentState->boringPly<<endl;
-    for( int i=0; i<8; i++)
-    {
-      cout<<"Piece #"<<currentState->history[i].piece<<" move from "<<currentState->history[i].fromRank<<", "<<currentState->history[i].fromFile<<" to "<<currentState->history[i].toRank<<", "<<currentState->history[i].toFile<<endl;
-    }
-    */
+    
     
     if(currentState->enemyPieces[e].type=="Pawn" || game->moves[game->moves.size() - 1]->promotion!="" || game->moves[game->moves.size() - 1]->captured!=NULL)
     {
@@ -243,102 +232,6 @@ bool AI::run_turn()
     currentState->playerPieces[choice->piece].pieceRef->move(choice->toFile, choice->toRank);
   }
   
-  //currentState->genMoves(); //Generate all moves
-  
-  /*
-  //Random Move Selection
-  int randPiece=rand()%currentState->numPlayerPieces; //Select a piece
-  while(currentState->playerPieces[randPiece].numMoves==0 || currentState->playerPieces[randPiece].captured==true)
-  {
-    randPiece=rand()%currentState->numPlayerPieces;
-  }
-  int randMove=rand()%currentState->playerPieces[randPiece].numMoves; //Select a move
-  //cout<<"Selected: "<<randPiece<<" "<<randMove<<" of "<<currentState->playerPieces[randPiece].numMoves<<endl;
-  MoveList * selectedMove= currentState->playerPieces[randPiece].legalMoves; //Find selected move
-  for( int i=0; i<randMove; i++)
-  {
-
-    selectedMove=selectedMove->next;
-  }
-  */
-  
-  /*
-  //Prints all moves for selected Piece. OUTDATED.
-  MoveList * printMove= currentState->playerPieces[randPiece].legalMoves;
-  cout<<currentState->playerPieces[randPiece].type<<" at "<<currentState->playerPieces[randPiece].rank<<" "<<currentState->playerPieces[randPiece].file<<" could move to ";
-  while(printMove != NULL)
-  {
-    if(printMove->promotionType!="")
-    {
-      cout<<printMove->toRank<<" "<<printMove->toFile<<" (promotes to "<<printMove->promotionType<<"), ";
-    }
-    else
-    {
-      cout<<printMove->toRank<<" "<<printMove->toFile<<", ";
-    }
-    
-    printMove=printMove->next;
-  }
-  cout<<endl;
-  */
-  
-  /*
-  //Outputs piece locations
-  for( int i=0; i<currentState->numPlayerPieces; i++)
-  {
-    if(currentState->playerPieces[i].captured!=true)
-    {
-      cout<<"My "<<currentState->playerPieces[i].type<<" at "<<currentState->playerPieces[i].rank<<" "<<currentState->playerPieces[i].file<<endl;
-    }
-  }
-  
-  for( int i=0; i<currentState->numEnemyPieces; i++)
-  {
-    if(currentState->enemyPieces[i].captured!=true)
-    {
-      cout<<"Enemy "<<currentState->enemyPieces[i].type<<" at "<<currentState->enemyPieces[i].rank<<" "<<currentState->enemyPieces[i].file<<endl;
-    }
-  }*/
-  
-  //currentState->passant=false;
-  /*
-  //Send move to game
-  if(selectedMove->promotionType!="")
-  {
-    currentState->playerPieces[randPiece].pieceRef->move(selectedMove->toFile, selectedMove->toRank, selectedMove->promotionType);
-    currentState->playerPieces[randPiece].type=selectedMove->promotionType;
-  }
-  else
-  {
-    currentState->playerPieces[randPiece].pieceRef->move(selectedMove->toFile, selectedMove->toRank);
-  }
-  */
-  
-  /*
-  //Passant update
-  if(currentState->playerPieces[randPiece].type=="Pawn" && selectedMove->toRank==currentState->playerPieces[randPiece].rank+currentState->forward*2)
-  {
-    currentState->passant=true;
-    currentState->rankP=selectedMove->toRank-currentState->forward;
-    currentState->fileP=selectedMove->toFile;
-    currentState->passantTarget=randPiece;
-  }
-  
-  currentState->playerPieces[randPiece].file=selectedMove->toFile;//Update own information
-  currentState->playerPieces[randPiece].rank=selectedMove->toRank;
-  currentState->playerPieces[randPiece].moved=true;
-  if(selectedMove->isCastle!=0)
-  {
-    currentState->playerPieces[selectedMove->rookIndex].file=currentState->playerPieces[randPiece].file[0]+selectedMove->isCastle;
-  }
-  
-
-  if(selectedMove->isCapture)
-  {
-    currentState->enemyPieces[selectedMove->target].captured=true;
-  }
-  
-  */
   
   
   MoveList * temp=currentState->legalMoves;
