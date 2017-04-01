@@ -228,8 +228,10 @@ bool AI::run_turn()
   unsigned long stop;
   long result;
   
+  currentState->genMoves();
+  
   //for(int i=1; i<=maxDepthLimit; i++)
-  while(1)
+  for(int i=1; i>0; i++)
   {
     choice=currentState->DLM(i);
     clock_gettime(CLOCK_MONOTONIC, &tv1);
@@ -239,6 +241,7 @@ bool AI::run_turn()
     {
       break;
     }
+    
   }
   
   currentState->updateState(choice);

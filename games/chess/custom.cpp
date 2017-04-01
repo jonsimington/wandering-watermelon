@@ -1208,13 +1208,13 @@ bool State::checkKing()
 //Recursive Depth-Limited Minimax
 MoveList* State::DLM(int depthLimit)
 {
-  genMoves();
+  
   
   
   //int bestValue=-101; //replacing this with alpha
   int currentValue;
   int alpha=-150;
-  int beta=150
+  int beta=150;
   MoveList* bestMove;
   
   State* nextState=new State[numMoves];
@@ -1306,6 +1306,7 @@ int State::MAX(int depthLimit, int alpha, int beta)
     }
     if(currentValue>=beta)
     {
+      numMoves=i+1;
       break;
     }
     move=move->next;
@@ -1371,13 +1372,14 @@ int State::MIN(int depthLimit, int alpha, int beta)
   {
     makeNextState(nextState[i]);
     nextState[i].updateState(move);
-    currentValue=nextState[i].MAX(depthLimit-1);
+    currentValue=nextState[i].MAX(depthLimit-1, alpha, beta);
     if(currentValue<beta)
     {
       beta=currentValue;
     }
     if(currentValue<=alpha)
     {
+      numMoves=i+1;
       break;
     }
     move=move->next;
