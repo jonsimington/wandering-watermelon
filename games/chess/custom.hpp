@@ -82,8 +82,8 @@ class State
   void matAdvEvalMIN();
   
   MoveList* DLM(int depthLimit);
-  int MAX(int depthLimit);
-  int MIN(int depthLimit);
+  int MAX(int depthLimit, int alpha, int beta);
+  int MIN(int depthLimit, int alpha, int beta);
   
   void makeNextState(State & targetState);
   void updateState(MoveList* move);

@@ -30,6 +30,8 @@ void AI::start()
 {
   // This is a good place to initialize any variables
   srand(time(NULL));
+  maxExpectedTurns=300;
+  timePerTurn=player->time_remaining/maxExpectedTurns;
   
   //Default depth limit is two, can override
   maxDepthLimit=2;
@@ -216,9 +218,27 @@ bool AI::run_turn()
   
   
   MoveList * choice;
-  for(int i=1; i<=maxDepthLimit; i++)
+  
+  struct timespec tv;
+  struct timespec tv1;
+
+  clock_gettime(CLOCK_MONOTONIC, &tv);
+
+  unsigned long start = (unsigned long)(tv.tv_sec) * 1000000000 + (unsigned long)(tv.tv_nsec) ;
+  unsigned long stop;
+  long result;
+  
+  //for(int i=1; i<=maxDepthLimit; i++)
+  while(1)
   {
     choice=currentState->DLM(i);
+    clock_gettime(CLOCK_MONOTONIC, &tv1);
+    stop = (unsigned long)(tv1.tv_sec) * 1000000000  + (unsigned long)(tv1.tv_nsec) ;
+    result=stop-start;
+    if(result>timePerTurn)
+    {
+      break;
+    }
   }
   
   currentState->updateState(choice);

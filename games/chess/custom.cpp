@@ -782,87 +782,67 @@ void State::castleCheck(int k)
     int spaceValue;
     for( int r=0; r<numPlayerPieces; r++)
     {
-      if(playerPieces[r].type=="Rook" && playerPieces[r].moved==false) //Rook that hasn't moved
+      if(playerPieces[r].type=="Rook" && playerPieces[r].moved==false && playerPieces[k].rank==playerPieces[r].rank) //Rook hasn't moved and K and R on same rank
       {
-        if(playerPieces[k].rank==playerPieces[r].rank) //K and R on same rank
+        int end=false;
+        int look;
+        if(playerPieces[k].file>playerPieces[r].file && cQueen)//Rook is on left and Queenside castle not disabled
         {
-          int end=false;
-          int look;
-          if(playerPieces[k].file>playerPieces[r].file)//Rook is on left
+          for(int i=1; end==false; i++) //left
           {
-            if(cQueen)//Queenside castle not disabled
+            spaceValue=checkSpace(playerPieces[k].rank, playerPieces[k].file[0]-i, look);
+            if(spaceValue)
             {
-              for(int i=1; end==false; i++) //left
+              end=true;
+              if(spaceValue==1 && look==r && ! checkKing())
               {
-                spaceValue=checkSpace(playerPieces[k].rank, playerPieces[k].file[0]-i, look);
-                if(spaceValue)
+                playerPieces[k].file=fileOld[0]-1;
+                if( ! checkKing()) //One over
                 {
-                  end=true;
-                  if(spaceValue==1)
+                  playerPieces[k].file=fileOld[0]-2;
+                  if( ! checkKing()) //two over
                   {
-                    if(look==r) //Space between is empty;
-                    {
-                      if( ! checkKing()) //make sure king is never in check
-                      {
-                        playerPieces[k].file=fileOld[0]-1;
-                        if( ! checkKing()) //One over
-                        {
-                          playerPieces[k].file=fileOld[0]-2;
-                          if( ! checkKing()) //two over
-                          {
-                            addMove(k, playerPieces[k].rank, fileOld[0]-2, playerPieces[k].rank, fileOld[0], false, 0, "");
-                            legalMoves->isCastle=+1;
-                            legalMoves->rookIndex=r;
-                          }
-                        }
-                        playerPieces[k].file=fileOld;
-                      }
-                    }
+                    addMove(k, playerPieces[k].rank, fileOld[0]-2, playerPieces[k].rank, fileOld[0], false, 0, "");
+                    legalMoves->isCastle=+1;
+                    legalMoves->rookIndex=r;
                   }
                 }
+                playerPieces[k].file=fileOld;
               }
             }
           }
-          else //Rook is on right
+        }
+        else //Rook is on right
+        {
+          if(cKing)
           {
-            if(cKing)
+            for(int i=1; end==false; i++) //right
             {
-              for(int i=1; end==false; i++) //right
+              spaceValue=checkSpace(playerPieces[k].rank, playerPieces[k].file[0]+i, look);
+              if(spaceValue)
               {
-                spaceValue=checkSpace(playerPieces[k].rank, playerPieces[k].file[0]+i, look);
-                if(spaceValue)
+                end=true;
+                if(spaceValue==1 && look==r && ! checkKing())
                 {
-                  end=true;
-                  if(spaceValue==1)
+                  playerPieces[k].file=fileOld[0]+1;
+                  if( ! checkKing()) //One over
                   {
-                    if(look==r)
+                    playerPieces[k].file=fileOld[0]+2;
+                    if( ! checkKing()) //two over
                     {
-                      if( ! checkKing()) //make sure king is never in check
-                      {
-                        playerPieces[k].file=fileOld[0]+1;
-                        if( ! checkKing()) //One over
-                        {
-                          playerPieces[k].file=fileOld[0]+2;
-                          if( ! checkKing()) //two over
-                          {
-                            addMove(k, playerPieces[k].rank, fileOld[0]+2, playerPieces[k].rank, fileOld[0], false, 0, "");
-                            legalMoves->isCastle=-1;
-                            legalMoves->rookIndex=r;
-                          }
-                        }
-                        playerPieces[k].file=fileOld;
-                      }
+                      addMove(k, playerPieces[k].rank, fileOld[0]+2, playerPieces[k].rank, fileOld[0], false, 0, "");
+                      legalMoves->isCastle=-1;
+                      legalMoves->rookIndex=r;
                     }
                   }
+                  playerPieces[k].file=fileOld;
                 }
               }
             }
-            
           }
         }
       }
     }
-    
   }
 }
 
@@ -970,12 +950,9 @@ bool State::checkKing()
     if(spaceValue)
     {
       end=true;
-      if(spaceValue==2)
+      if(spaceValue==2 && (enemyPieces[threat].type=="Queen" || enemyPieces[threat].type=="Rook") )
       {
-        if(enemyPieces[threat].type=="Queen" || enemyPieces[threat].type=="Rook")
-        {
-          return true;
-        }
+        return true;
       }
     }
   }
@@ -986,12 +963,9 @@ bool State::checkKing()
     if(spaceValue)
     {
       end=true;
-      if(spaceValue==2)
+      if(spaceValue==2 && (enemyPieces[threat].type=="Queen" || enemyPieces[threat].type=="Rook") )
       {
-        if(enemyPieces[threat].type=="Queen" || enemyPieces[threat].type=="Rook")
-        {
-          return true;
-        }
+        return true;
       }
     }
   }
@@ -1002,12 +976,9 @@ bool State::checkKing()
     if(spaceValue)
     {
       end=true;
-      if(spaceValue==2)
+      if(spaceValue==2 && (enemyPieces[threat].type=="Queen" || enemyPieces[threat].type=="Rook") )
       {
-        if(enemyPieces[threat].type=="Queen" || enemyPieces[threat].type=="Rook")
-        {
-          return true;
-        }
+        return true;
       }
     }
   }
@@ -1018,12 +989,9 @@ bool State::checkKing()
     if(spaceValue)
     {
       end=true;
-      if(spaceValue==2)
+      if(spaceValue==2 && (enemyPieces[threat].type=="Queen" || enemyPieces[threat].type=="Rook") )
       {
-        if(enemyPieces[threat].type=="Queen" || enemyPieces[threat].type=="Rook")
-        {
-          return true;
-        }
+        return true;
       }
     }
   }
@@ -1034,12 +1002,9 @@ bool State::checkKing()
     if(spaceValue)
     {
       end=true;
-      if(spaceValue==2)
+      if(spaceValue==2 && (enemyPieces[threat].type=="Queen" || enemyPieces[threat].type=="Bishop") )
       {
-        if(enemyPieces[threat].type=="Queen" || enemyPieces[threat].type=="Bishop")
-        {
-          return true;
-        }
+        return true;
       }
     }
   }
@@ -1050,12 +1015,9 @@ bool State::checkKing()
     if(spaceValue)
     {
       end=true;
-      if(spaceValue==2)
+      if(spaceValue==2 && (enemyPieces[threat].type=="Queen" || enemyPieces[threat].type=="Bishop") )
       {
-        if(enemyPieces[threat].type=="Queen" || enemyPieces[threat].type=="Bishop")
-        {
-          return true;
-        }
+        return true;
       }
     }
   }
@@ -1066,12 +1028,9 @@ bool State::checkKing()
     if(spaceValue)
     {
       end=true;
-      if(spaceValue==2)
+      if(spaceValue==2 && (enemyPieces[threat].type=="Queen" || enemyPieces[threat].type=="Bishop") )
       {
-        if(enemyPieces[threat].type=="Queen" || enemyPieces[threat].type=="Bishop")
-        {
-          return true;
-        }
+        return true;
       }
     }
   }
@@ -1082,12 +1041,9 @@ bool State::checkKing()
     if(spaceValue)
     {
       end=true;
-      if(spaceValue==2)
+      if(spaceValue==2 && (enemyPieces[threat].type=="Queen" || enemyPieces[threat].type=="Bishop") )
       {
-        if(enemyPieces[threat].type=="Queen" || enemyPieces[threat].type=="Bishop")
-        {
-          return true;
-        }
+        return true;
       }
     }
   }
@@ -1096,23 +1052,17 @@ bool State::checkKing()
   spaceValue=checkSpace(playerPieces[k].rank+forward, playerPieces[k].file[0]+1, threat);
   if(spaceValue)
   {
-    if(spaceValue==2)
+    if(spaceValue==2 && enemyPieces[threat].type=="Pawn")
     {
-      if(enemyPieces[threat].type=="Pawn")
-      {
-        return true;
-      }
+      return true;
     }
   }
   spaceValue=checkSpace(playerPieces[k].rank+forward, playerPieces[k].file[0]-1, threat);
   if(spaceValue)
   {
-    if(spaceValue==2)
+    if(spaceValue==2 && enemyPieces[threat].type=="Pawn")
     {
-      if(enemyPieces[threat].type=="Pawn")
-      {
-        return true;
-      }
+      return true;
     }
   }
   
@@ -1120,92 +1070,68 @@ bool State::checkKing()
   spaceValue=checkSpace(playerPieces[k].rank+2, playerPieces[k].file[0]-1, threat);  //up up left
   if(spaceValue)
   {
-    if(spaceValue==2)
+    if(spaceValue==2 && enemyPieces[threat].type=="Knight")
     {
-      if(enemyPieces[threat].type=="Knight")
-      {
-        return true;
-      }
+      return true;
     }
   }
   spaceValue=checkSpace(playerPieces[k].rank+2, playerPieces[k].file[0]+1, threat); //up up right
   if(spaceValue)
   {
-    if(spaceValue==2)
+    if(spaceValue==2 && enemyPieces[threat].type=="Knight")
     {
-      if(enemyPieces[threat].type=="Knight")
-      {
-        return true;
-      }
+      return true;
     }
   }
   
   spaceValue=checkSpace(playerPieces[k].rank-2, playerPieces[k].file[0]-1, threat); //down down left
   if(spaceValue)
   {
-    if(spaceValue==2)
+    if(spaceValue==2 && enemyPieces[threat].type=="Knight")
     {
-      if(enemyPieces[threat].type=="Knight")
-      {
-        return true;
-      }
+      return true;
     }
   }
   spaceValue=checkSpace(playerPieces[k].rank-2, playerPieces[k].file[0]+1, threat); //down down right
   if(spaceValue)
   {
-    if(spaceValue==2)
+    if(spaceValue==2 && enemyPieces[threat].type=="Knight")
     {
-      if(enemyPieces[threat].type=="Knight")
-      {
-        return true;
-      }
+      return true;
     }
   }
   
   spaceValue=checkSpace(playerPieces[k].rank+1, playerPieces[k].file[0]-2, threat); //left left up
   if(spaceValue)
   {
-    if(spaceValue==2)
+    if(spaceValue==2 && enemyPieces[threat].type=="Knight")
     {
-      if(enemyPieces[threat].type=="Knight")
-      {
-        return true;
-      }
+      return true;
     }
   }
   spaceValue=checkSpace(playerPieces[k].rank-1, playerPieces[k].file[0]-2, threat); //left left down
   if(spaceValue)
   {
-    if(spaceValue==2)
+    if(spaceValue==2 && enemyPieces[threat].type=="Knight")
     {
-      if(enemyPieces[threat].type=="Knight")
-      {
-        return true;
-      }
+      return true;
     }
   }
   
   spaceValue=checkSpace(playerPieces[k].rank+1, playerPieces[k].file[0]+2, threat); //right right up
   if(spaceValue)
   {
-    if(spaceValue==2)
+    if(spaceValue==2 && enemyPieces[threat].type=="Knight")
     {
-      if(enemyPieces[threat].type=="Knight")
-      {
-        return true;
-      }
+      return true;
     }
   }
   spaceValue=checkSpace(playerPieces[k].rank-1, playerPieces[k].file[0]+2, threat); //right right down
   if(spaceValue)
   {
-    if(spaceValue==2)
+    if(spaceValue==2 && enemyPieces[threat].type=="Knight")
     {
-      if(enemyPieces[threat].type=="Knight")
-      {
-        return true;
-      }
+      return true;
     }
   }
   
@@ -1213,89 +1139,65 @@ bool State::checkKing()
   spaceValue=checkSpace(playerPieces[k].rank+1, playerPieces[k].file[0], threat);
   if(spaceValue)
   {
-    if(spaceValue==2)
+    if(spaceValue==2 && enemyPieces[threat].type=="King")
     {
-      if(enemyPieces[threat].type=="King")
-      {
-        return true;
-      }
+      return true;
     }
   }
   spaceValue=checkSpace(playerPieces[k].rank-1, playerPieces[k].file[0], threat);
   if(spaceValue)
   {
-    if(spaceValue==2)
+    if(spaceValue==2 && enemyPieces[threat].type=="King")
     {
-      if(enemyPieces[threat].type=="King")
-      {
-        return true;
-      }
+      return true;
     }
   }
   spaceValue=checkSpace(playerPieces[k].rank, playerPieces[k].file[0]+1, threat);
   if(spaceValue)
   {
-    if(spaceValue==2)
+    if(spaceValue==2 && enemyPieces[threat].type=="King")
     {
-      if(enemyPieces[threat].type=="King")
-      {
-        return true;
-      }
+      return true;
     }
   }
   spaceValue=checkSpace(playerPieces[k].rank, playerPieces[k].file[0]-1, threat);
   if(spaceValue)
   {
-    if(spaceValue==2)
+    if(spaceValue==2 && enemyPieces[threat].type=="King")
     {
-      if(enemyPieces[threat].type=="King")
-      {
-        return true;
-      }
+      return true;
     }
   }
   spaceValue=checkSpace(playerPieces[k].rank+1, playerPieces[k].file[0]+1, threat);
   if(spaceValue)
   {
-    if(spaceValue==2)
+    if(spaceValue==2 && enemyPieces[threat].type=="King")
     {
-      if(enemyPieces[threat].type=="King")
-      {
-        return true;
-      }
+      return true;
     }
   }
   spaceValue=checkSpace(playerPieces[k].rank-1, playerPieces[k].file[0]+1, threat);
   if(spaceValue)
   {
-    if(spaceValue==2)
+    if(spaceValue==2 && enemyPieces[threat].type=="King")
     {
-      if(enemyPieces[threat].type=="King")
-      {
-        return true;
-      }
+      return true;
     }
   }
   spaceValue=checkSpace(playerPieces[k].rank+1, playerPieces[k].file[0]-1, threat);
   if(spaceValue)
   {
-    if(spaceValue==2)
+    if(spaceValue==2 && enemyPieces[threat].type=="King")
     {
-      if(enemyPieces[threat].type=="King")
-      {
-        return true;
-      }
+      return true;
     }
   }
   spaceValue=checkSpace(playerPieces[k].rank-1, playerPieces[k].file[0]-1, threat);
   if(spaceValue)
   {
-    if(spaceValue==2)
+    if(spaceValue==2 && enemyPieces[threat].type=="King")
     {
-      if(enemyPieces[threat].type=="King")
-      {
-        return true;
-      }
+      return true;
     }
   }
   
@@ -1309,8 +1211,10 @@ MoveList* State::DLM(int depthLimit)
   genMoves();
   
   
-  int bestValue=-101;
+  //int bestValue=-101; //replacing this with alpha
   int currentValue;
+  int alpha=-150;
+  int beta=150
   MoveList* bestMove;
   
   State* nextState=new State[numMoves];
@@ -1320,13 +1224,15 @@ MoveList* State::DLM(int depthLimit)
     nextState[i].numPlayerPieces=0;
     makeNextState(nextState[i]);
     nextState[i].updateState(move);
-    currentValue=nextState[i].MIN(depthLimit-1);
-    if(currentValue>bestValue)
+    currentValue=nextState[i].MIN(depthLimit-1, alpha, beta);
+    if(currentValue>alpha)
     {
-      bestValue=currentValue;
+      alpha=currentValue;
+      //bestValue=currentValue;
       bestMove=move;
     }
-    if(currentValue=bestValue)
+    /* //Randomizer should no longer be necessary
+    if(currentValue==alpha)
     {
       int roll=rand()%2;
       if(roll==0)
@@ -1334,7 +1240,13 @@ MoveList* State::DLM(int depthLimit)
         bestMove=move;
       }
     }
+    */
     move=move->next;
+    
+    if(currentValue>beta) //This should not actually be possible unless hueristic is changed.
+    {
+      cout<<"Something has gone very wrong in DLM. Beta exceeded"<<endl;
+    }
   }
   
   for(int i=0; i<numMoves; i++)
@@ -1356,7 +1268,7 @@ MoveList* State::DLM(int depthLimit)
   return bestMove;
 }
 
-int State::MAX(int depthLimit)
+int State::MAX(int depthLimit, int alpha, int beta)
 {
   genMoves();
   
@@ -1378,7 +1290,7 @@ int State::MAX(int depthLimit)
   }
   
   
-  int bestValue=-101;
+  //int bestValue=-101;
   int currentValue;
   
   State* nextState=new State[numMoves];
@@ -1387,10 +1299,14 @@ int State::MAX(int depthLimit)
   {
     makeNextState(nextState[i]);
     nextState[i].updateState(move);
-    currentValue=nextState[i].MIN(depthLimit-1);
-    if(currentValue>bestValue)
+    currentValue=nextState[i].MIN(depthLimit-1, alpha, beta);
+    if(currentValue>alpha)
     {
-      bestValue=currentValue;
+      alpha=currentValue;
+    }
+    if(currentValue>=beta)
+    {
+      break;
     }
     move=move->next;
   }
@@ -1421,10 +1337,10 @@ int State::MAX(int depthLimit)
   }
   numMoves=0;
   
-  return bestValue;
+  return alpha;
 }
 
-int State::MIN(int depthLimit)
+int State::MIN(int depthLimit, int alpha, int beta)
 {
   genMoves();
   
@@ -1446,7 +1362,7 @@ int State::MIN(int depthLimit)
   }
   
   
-  int bestValue=101;
+  //int bestValue=101;
   int currentValue;
   
   State* nextState=new State[numMoves];
@@ -1456,9 +1372,13 @@ int State::MIN(int depthLimit)
     makeNextState(nextState[i]);
     nextState[i].updateState(move);
     currentValue=nextState[i].MAX(depthLimit-1);
-    if(currentValue<bestValue)
+    if(currentValue<beta)
     {
-      bestValue=currentValue;
+      beta=currentValue;
+    }
+    if(currentValue<=alpha)
+    {
+      break;
     }
     move=move->next;
   }
@@ -1489,7 +1409,7 @@ int State::MIN(int depthLimit)
   }
   numMoves=0;
   
-  return bestValue;
+  return beta;
 }
 
 //Mostly a copy function. Swaps player and enemy pieces.
