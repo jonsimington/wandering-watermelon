@@ -30,7 +30,7 @@ void AI::start()
 {
   // This is a good place to initialize any variables
   srand(time(NULL));
-  maxExpectedTurns=300;
+  maxExpectedTurns=150;
   timePerTurn=player->time_remaining/maxExpectedTurns;
   
   //Default depth limit is two, can override

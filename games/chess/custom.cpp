@@ -61,6 +61,7 @@ void State::matAdvEval()
   StateMatValue=-count;
 }
 
+/*
 //Finds the material value for a state. Inverted due to how data is handled in MIN()
 void State::matAdvEvalMIN()
 {
@@ -111,6 +112,7 @@ void State::matAdvEvalMIN()
   }
   StateMatValue=-count;
 }
+*/
 
 //Handles reading FEN string
 void State::fen(string fen)
@@ -1213,8 +1215,8 @@ MoveList* State::DLM(int depthLimit)
   
   //int bestValue=-101; //replacing this with alpha
   int currentValue;
-  int alpha=-150;
-  int beta=150;
+  int alpha=-1500;
+  int beta=1500;
   MoveList* bestMove;
   
   State* nextState=new State[numMoves];
@@ -1275,7 +1277,7 @@ int State::MAX(int depthLimit, int alpha, int beta)
   //If max has no moves AND in check, Max lost.
   if(numMoves==0 && checkKing())
   {
-    StateMatValue=-100;
+    StateMatValue=-1000;
     return StateMatValue;
   }
   if(checkDraw())
@@ -1348,7 +1350,7 @@ int State::MIN(int depthLimit, int alpha, int beta)
   //If min has no moves AND in check, Max wins.
   if(numMoves==0 && checkKing())
   {
-    StateMatValue=100;
+    StateMatValue=1000;
     return StateMatValue;
   }
   if(checkDraw())
@@ -1358,7 +1360,8 @@ int State::MIN(int depthLimit, int alpha, int beta)
   }
   if(depthLimit==0)
   {
-    matAdvEvalMIN();
+    matAdvEval();
+    StateMatValue= -StateMatValue; //Condensed alternate Eval functions, this is currently needed to ensure correct value.
     return StateMatValue;
   }
   
