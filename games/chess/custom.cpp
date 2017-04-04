@@ -1233,16 +1233,7 @@ MoveList* State::DLM(int depthLimit)
       //bestValue=currentValue;
       bestMove=move;
     }
-    /* //Randomizer should no longer be necessary
-    if(currentValue==alpha)
-    {
-      int roll=rand()%2;
-      if(roll==0)
-      {
-        bestMove=move;
-      }
-    }
-    */
+    //Randomizer is no longer viable due to AB pruning
     move=move->next;
     
     if(currentValue>beta) //This should not actually be possible unless hueristic is changed.

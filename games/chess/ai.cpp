@@ -30,7 +30,7 @@ void AI::start()
 {
   // This is a good place to initialize any variables
   srand(time(NULL));
-  maxExpectedTurns=100;
+  maxExpectedTurns=200;
   if(get_setting("TURNS")!="")
   {
     maxExpectedTurns=stoi(get_setting("TURNS"));
@@ -241,8 +241,10 @@ bool AI::run_turn()
     clock_gettime(CLOCK_MONOTONIC, &tv1);
     stop = (unsigned long)(tv1.tv_sec) * 1000000000  + (unsigned long)(tv1.tv_nsec) ;
     result=stop-start;
+    //cout<<"Depth "<<i<<" took "<<result<<endl;
     if(result>timePerTurn)
     {
+      //cout<<"reached a depth of "<<i<<" in "<<result<<"out of"<<timePerTurn<<endl;
       break;
     }
     
