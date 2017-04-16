@@ -41,7 +41,9 @@ public:
     State* currentState;
     int maxDepthLimit;
     int maxExpectedTurns;
+    int maxQDepthLimit;
     double timePerTurn;
+    
 
     /// <summary>
     /// This returns your AI's name to the game server.

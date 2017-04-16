@@ -15,6 +15,7 @@ class MoveList
 {
   public:
   int piece;
+  string type;
   int toRank;
   string toFile;
   int fromRank; //
@@ -22,6 +23,7 @@ class MoveList
   int target;
   bool isCapture;
   string promotionType;
+  int history;
   MoveList * next;
   
   int isCastle;
@@ -56,6 +58,8 @@ class State
   int StateMatValue;
   int boringPly;
   MoveList history [16];
+  MoveList ** hTable;
+  const int hTableSize=64;
   
   bool passant;
   int rankP;
@@ -81,9 +85,13 @@ class State
   void matAdvEval();
   void matAdvEvalMIN();
   
-  MoveList* DLM(int depthLimit);
-  int MAX(int depthLimit, int alpha, int beta);
-  int MIN(int depthLimit, int alpha, int beta);
+  int hashValue(int rank, string file);
+  int getHistory(MoveList * move);
+  void setHistory(MoveList * move);
+  
+  MoveList* DLM(int depthLimit, int qLimit);
+  int MAX(int depthLimit, int alpha, int beta, bool isQ, int qLimit);
+  int MIN(int depthLimit, int alpha, int beta, bool isQ, int qLimit);
   
   void makeNextState(State & targetState);
   void updateState(MoveList* move);

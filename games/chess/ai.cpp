@@ -44,6 +44,12 @@ void AI::start()
     maxDepthLimit=stoi(get_setting("DEPTH"));
   }
   
+  maxQDepthLimit=2;
+  if(get_setting("Q_DEPTH")!="")
+  {
+    maxQDepthLimit=stoi(get_setting("Q_DEPTH"));
+  }
+  
   currentState= new State();
   currentState->numPlayerPieces=player->pieces.size();
   currentState->playerPieces= new MyPiece[currentState->numPlayerPieces];
@@ -85,6 +91,13 @@ void AI::start()
   currentState->passant=false;
   currentState->fen(game->fen);
   currentState->boringPly=0;
+  currentState->hTable= new MoveList*[currentState->hTableSize];
+  for(int i=0; i<currentState->hTableSize; i++)
+  {
+    currentState->hTable[i]=NULL;
+  }
+  
+  
 }
 
 /// <summary>
@@ -102,7 +115,17 @@ void AI::game_updated()
 /// <param name="reason">An explanation for why you either won or lost</param>
 void AI::ended(bool won, const std::string& reason)
 {
-  
+  MoveList * tmp;
+  for(int i=0; i<currentState->hTableSize; i++)
+  {
+    while(currentState->hTable[i]!=NULL)
+    {
+      tmp=currentState->hTable[i];
+      currentState->hTable[i]=currentState->hTable[i]->next;
+      delete tmp;
+    }
+  }
+  delete[] currentState->hTable;
   delete[] currentState->enemyPieces;
   delete[] currentState->playerPieces;
   delete currentState;
@@ -237,7 +260,7 @@ bool AI::run_turn()
   //for(int i=1; i<=maxDepthLimit; i++)
   for(int i=1; i>0; i++)
   {
-    choice=currentState->DLM(i);
+    choice=currentState->DLM(i, maxQDepthLimit);
     clock_gettime(CLOCK_MONOTONIC, &tv1);
     stop = (unsigned long)(tv1.tv_sec) * 1000000000  + (unsigned long)(tv1.tv_nsec) ;
     result=stop-start;

@@ -906,12 +906,90 @@ void State::addMove(int p, int toRank, char toFile, int fromRank, char fromFile,
   tmp->fromRank=fromRank;
   tmp->target=e;
   tmp->piece=p;
+  tmp->type=playerPieces[p].type;
   tmp->isCapture=capture;
   tmp->isCastle=false;
   tmp->promotionType=type;
-  tmp->next=legalMoves;
-  legalMoves=tmp;
+  tmp->history=getHistory(tmp);
+  
+  MoveList * insert=legalMoves;
+  if(legalMoves==NULL)
+  {
+    tmp->next=legalMoves;
+    legalMoves=tmp;
+  }
+  else  //Insert move into list based on history table value.
+  {
+    while(insert->next!=NULL && tmp->history < insert->next->history)
+    {
+      insert=insert->next;
+    }
+    tmp->next=insert->next;
+    insert->next=tmp;
+  }
+  
   numMoves++;
+}
+
+int State::hashValue(int rank, string file)
+{
+  return ((rank-1)*8+ ((int)file[0]-97))%hTableSize;
+}
+
+int State::getHistory(MoveList * move)
+{
+  int hash;
+  hash=hashValue(move->fromRank, move->fromFile);
+  MoveList * check= hTable[hash];
+  while(check!=NULL)
+  {
+    if(move->toFile[0]==check->toFile[0] && move->toRank==check->toRank )//&& move->type==check->type
+    {
+      return check->history;
+    }
+    check=check->next;
+  }
+  return 0;
+}
+  
+void State::setHistory(MoveList * move)
+{
+  int hash;
+  hash=hashValue(move->fromRank, move->fromFile);
+  //cout<<"hash:"<<hash<<endl;
+  MoveList * check= hTable[hash];
+  //cout<<move->fromRank<<","<<move->fromFile<<" to "<<move->toRank<<","<<move->toFile<<endl;
+  while(check!=NULL)
+  {
+    //cout<<"Htable: "<<check->fromRank<<","<<check->fromFile<<" to "<<check->toRank<<","<<check->toFile<<endl;
+    if(move->toFile[0]==check->toFile[0] && move->toRank==check->toRank )//&& move->type==check->type
+    {
+      break;
+    }
+    check=check->next;
+  }
+  
+  if(check==NULL)
+  {
+    MoveList * tmp= new MoveList;
+    tmp->toFile=move->toFile;
+    tmp->toRank=move->toRank;
+    tmp->type=move->type;
+    tmp->history=0;
+    tmp->next=hTable[hash];
+    hTable[hash]=tmp;
+    check=tmp;
+    tmp->piece=move->piece;
+    tmp->fromRank=move->fromRank;
+    tmp->fromFile=move->fromFile;
+    //tmp->target=move->target;
+    tmp->isCapture=move->isCapture;
+    //tmp->promotionType=move->promotionType;
+    tmp->isCastle=move->isCastle;
+    //tmp->rookIndex=move->rookIndex;
+  }
+  
+  check->history++;
 }
 
 
@@ -1208,8 +1286,9 @@ bool State::checkKing()
 }
 
 //Recursive Depth-Limited Minimax
-MoveList* State::DLM(int depthLimit)
+MoveList* State::DLM(int depthLimit, int qLimit)
 {
+  
   
   
   
@@ -1218,6 +1297,7 @@ MoveList* State::DLM(int depthLimit)
   int alpha=-1500;
   int beta=1500;
   MoveList* bestMove;
+  bool q;
   
   State* nextState=new State[numMoves];
   MoveList * move=legalMoves;
@@ -1226,7 +1306,8 @@ MoveList* State::DLM(int depthLimit)
     nextState[i].numPlayerPieces=0;
     makeNextState(nextState[i]);
     nextState[i].updateState(move);
-    currentValue=nextState[i].MIN(depthLimit-1, alpha, beta);
+    q= !(move->isCapture) && (move->promotionType=="" || move->type!="Pawn"); 
+    currentValue=nextState[i].MIN(depthLimit-1, alpha, beta, q, qLimit);
     if(currentValue>alpha)
     {
       alpha=currentValue;
@@ -1256,17 +1337,21 @@ MoveList* State::DLM(int depthLimit)
     }
   }
   delete[] nextState;
-  
-  
+  //cout<<"DLM"<<endl;
+  setHistory(bestMove);
   return bestMove;
 }
 
-int State::MAX(int depthLimit, int alpha, int beta)
+int State::MAX(int depthLimit, int alpha, int beta, bool isQ, int qLimit)
 {
+  
   genMoves();
   
+  bool inCheck=checkKing();
+  isQ= isQ && ! (inCheck);
+  
   //If max has no moves AND in check, Max lost.
-  if(numMoves==0 && checkKing())
+  if(numMoves==0 && inCheck)
   {
     StateMatValue=-1000;
     return StateMatValue;
@@ -1276,36 +1361,51 @@ int State::MAX(int depthLimit, int alpha, int beta)
     StateMatValue=0;
     return StateMatValue;
   }
-  if(depthLimit==0)
+  if(depthLimit<=0 && (isQ || qLimit==0))
   {
     matAdvEval();
     return StateMatValue;
   }
   
+  if(depthLimit<=0 && !isQ  && qLimit!=0)
+  {
+    qLimit--;
+  }
   
   //int bestValue=-101;
   int currentValue;
-  
+  MoveList* bestMove;
   State* nextState=new State[numMoves];
   MoveList * move=legalMoves;
+  int best=-1500;
+  bool q;
   for(int i=0; i<numMoves; i++)
   {
     makeNextState(nextState[i]);
     nextState[i].updateState(move);
-    currentValue=nextState[i].MIN(depthLimit-1, alpha, beta);
-    if(currentValue>alpha)
+    q= !(move->isCapture) && (move->promotionType=="" || move->type!="Pawn");
+    currentValue=nextState[i].MIN(depthLimit-1, alpha, beta, q, qLimit);
+    if(currentValue>best)
     {
-      alpha=currentValue;
+      best=currentValue;
+      if(currentValue>alpha)
+      {
+        alpha=currentValue;
+      }
+      bestMove=move;
     }
     if(currentValue>=beta)
     {
       numMoves=i+1;
+      best=currentValue;
+      bestMove=move;
       break;
     }
     move=move->next;
   }
-  
-  
+  //cout<<"Max"<<endl;
+  //cout<<bestMove->fromRank<<","<<bestMove->fromFile<<" to "<<bestMove->toRank<<","<<bestMove->toFile<<endl;
+  setHistory(bestMove);
   
   for(int i=0; i<numMoves; i++)
   {
@@ -1331,15 +1431,19 @@ int State::MAX(int depthLimit, int alpha, int beta)
   }
   numMoves=0;
   
-  return alpha;
+  return best;
 }
 
-int State::MIN(int depthLimit, int alpha, int beta)
+int State::MIN(int depthLimit, int alpha, int beta, bool isQ, int qLimit)
 {
+  
   genMoves();
   
+  bool inCheck=checkKing();
+  isQ= isQ && ! (inCheck);
+  
   //If min has no moves AND in check, Max wins.
-  if(numMoves==0 && checkKing())
+  if(numMoves==0 && inCheck)
   {
     StateMatValue=1000;
     return StateMatValue;
@@ -1349,37 +1453,60 @@ int State::MIN(int depthLimit, int alpha, int beta)
     StateMatValue=0;
     return StateMatValue;
   }
-  if(depthLimit==0)
+  if(depthLimit<=0 && (isQ || qLimit==0))
   {
     matAdvEval();
+    //In order to use early move generation code, the contents of playerPieces and enemyPieces is swapped when in MIN. 
+    //Thus, matAdvEval is returning the state evaluation for MIN. The negation of the is the evaluation for MAX, which is what we need.
     StateMatValue= -StateMatValue; //Condensed alternate Eval functions, this is currently needed to ensure correct value.
     return StateMatValue;
   }
   
+  if(depthLimit<=0 && !isQ  && qLimit!=0)
+  {
+    qLimit--;
+  }
   
   //int bestValue=101;
   int currentValue;
-  
+  MoveList* bestMove;
   State* nextState=new State[numMoves];
   MoveList * move=legalMoves;
+  bool q;
+  int best=1500;
+  //cout<<"list moves"<<endl;
   for(int i=0; i<numMoves; i++)
   {
+    
+    //cout<<move->fromRank<<","<<move->fromFile<<" to "<<move->toRank<<","<<move->toFile<<endl;
+    
     makeNextState(nextState[i]);
     nextState[i].updateState(move);
-    currentValue=nextState[i].MAX(depthLimit-1, alpha, beta);
-    if(currentValue<beta)
+    q= !(move->isCapture) && (move->promotionType=="" || move->type!="Pawn");
+    currentValue=nextState[i].MAX(depthLimit-1, alpha, beta, q, qLimit);
+    if(currentValue<best)
     {
-      beta=currentValue;
+      best=currentValue;
+      if(currentValue<beta)
+      {
+        beta=currentValue;
+      }
+      bestMove=move;
     }
     if(currentValue<=alpha)
     {
       numMoves=i+1;
+      best=currentValue;
+      bestMove=move;
+      //cout<<"Prune"<<endl;
       break;
     }
     move=move->next;
   }
   
-  
+  //cout<<"Min "<<numMoves<<endl;
+  //cout<<bestMove->fromRank<<","<<bestMove->fromFile<<" to "<<bestMove->toRank<<","<<bestMove->toFile<<endl;
+  setHistory(bestMove);
   
   for(int i=0; i<numMoves; i++)
   {
@@ -1405,7 +1532,7 @@ int State::MIN(int depthLimit, int alpha, int beta)
   }
   numMoves=0;
   
-  return beta;
+  return best;
 }
 
 //Mostly a copy function. Swaps player and enemy pieces.
@@ -1464,6 +1591,8 @@ void State::makeNextState(State & targetState)
     targetState.history[i].fromFile=history[i].fromFile;
     targetState.history[i].piece=history[i].piece;
   }
+  
+  targetState.hTable=hTable;
 }
 
 //Applies a move to the state
