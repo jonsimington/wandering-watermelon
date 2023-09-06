@@ -20,7 +20,7 @@ namespace chess
 std::string AI::get_name() const
 {
   // REPLACE WITH YOUR TEAM NAME!
-  return "chess_john_brna";
+  return "Wandering Watermelon";
 }
 
 /// <summary>
@@ -36,26 +36,26 @@ void AI::start()
     maxExpectedTurns=stoi(get_setting("TURNS"));
   }
   timePerTurn=player->time_remaining/maxExpectedTurns;
-  
+
   //Default depth limit is two, can override
   maxDepthLimit=2;
   if(get_setting("DEPTH")!="")
   {
     maxDepthLimit=stoi(get_setting("DEPTH"));
   }
-  
+
   maxQDepthLimit=2;
   if(get_setting("Q_DEPTH")!="")
   {
     maxQDepthLimit=stoi(get_setting("Q_DEPTH"));
   }
-  
+
   currentState= new State();
   currentState->numPlayerPieces=player->pieces.size();
   currentState->playerPieces= new MyPiece[currentState->numPlayerPieces];
   for(int i=0; i<currentState->numPlayerPieces; i++)
   {
-    
+
     currentState->playerPieces[i].captured=player->pieces[i]->captured;
     currentState->playerPieces[i].color=player->pieces[i]->owner->color;
     currentState->playerPieces[i].rank=player->pieces[i]->rank;
@@ -64,12 +64,12 @@ void AI::start()
     currentState->playerPieces[i].moved=player->pieces[i]->has_moved;
     currentState->playerPieces[i].pieceRef=player->pieces[i];
   }
-  
+
   currentState->numEnemyPieces=player->opponent->pieces.size();
   currentState->enemyPieces= new MyPiece[currentState->numEnemyPieces];
   for(int i=0; i<currentState->numEnemyPieces; i++)
   {
-    
+
     currentState->enemyPieces[i].captured=player->opponent->pieces[i]->captured;
     currentState->enemyPieces[i].color=player->opponent->pieces[i]->owner->color;
     currentState->enemyPieces[i].rank=player->opponent->pieces[i]->rank;
@@ -78,7 +78,7 @@ void AI::start()
     currentState->enemyPieces[i].moved=player->opponent->pieces[i]->has_moved;
     currentState->enemyPieces[i].pieceRef=player->opponent->pieces[i];
   }
-  
+
   if(player->color=="White")
   {
     currentState->forward=1;
@@ -87,7 +87,7 @@ void AI::start()
   {
     currentState->forward=-1;
   }
-  
+
   currentState->passant=false;
   currentState->fen(game->fen);
   currentState->boringPly=0;
@@ -96,8 +96,8 @@ void AI::start()
   {
     currentState->hTable[i]=NULL;
   }
-  
-  
+
+
 }
 
 /// <summary>
@@ -138,7 +138,7 @@ void AI::ended(bool won, const std::string& reason)
 /// <returns>Represents if you want to end your turn. True means end your turn, False means to keep your turn going and re-call this function.</returns>
 bool AI::run_turn()
 {
-  
+
   if(game->moves.size() > 0) //Get updates based on last move
   {
     int e=0;
@@ -154,20 +154,20 @@ bool AI::run_turn()
         e++;
       }
     }
-    
+
     int cap;
     if(1==currentState->checkSpace(game->moves[game->moves.size() - 1]->to_rank, game->moves[game->moves.size() - 1]->to_file[0], cap))
     {
       currentState->playerPieces[cap].captured=true;
     }
-    
+
     if(currentState->passant && game->moves[game->moves.size() - 1]->to_rank==currentState->rankP && game->moves[game->moves.size() - 1]->to_file==currentState->fileP)
     {
       currentState->playerPieces[currentState->passantTarget].captured=true;
     }
-    
+
     currentState->passant=false;
-    
+
     //En Passant availability detection.
     int rankDif=game->moves[game->moves.size() - 1]->to_rank-game->moves[game->moves.size() - 1]->from_rank;
     if(game->moves[game->moves.size() - 1]->piece->type=="Pawn" && (rankDif==-2 || rankDif==2))
@@ -177,7 +177,7 @@ bool AI::run_turn()
       currentState->fileP=game->moves[game->moves.size() - 1]->to_file;
       currentState->passantTarget=e;
     }
-    
+
     //Castle detection
     int fileDif=game->moves[game->moves.size() - 1]->to_file[0]-game->moves[game->moves.size() - 1]->from_file[0];
     if(game->moves[game->moves.size() - 1]->piece->type=="King" && (fileDif==-2 || fileDif==2))
@@ -207,7 +207,7 @@ bool AI::run_turn()
       currentState->enemyPieces[r].moved=true;
       currentState->enemyPieces[r].file=game->moves[game->moves.size() - 1]->to_file[0]-(fileDif/2);
     }
-    
+
     currentState->enemyPieces[e].rank=game->moves[game->moves.size() - 1]->to_rank;
     currentState->enemyPieces[e].file=game->moves[game->moves.size() - 1]->to_file;
     currentState->enemyPieces[e].moved=true;
@@ -215,7 +215,7 @@ bool AI::run_turn()
     {
       currentState->enemyPieces[e].type=game->moves[game->moves.size() - 1]->promotion;
     }
-    
+
     for(int i=15; i>0; i--)
     {
       currentState->history[i].toRank  =currentState->history[i-1].toRank;
@@ -224,15 +224,15 @@ bool AI::run_turn()
       currentState->history[i].fromFile=currentState->history[i-1].fromFile;
       currentState->history[i].piece   =currentState->history[i-1].piece;
     }
-    
+
     currentState->history[0].toRank  =game->moves[game->moves.size() - 1]->to_rank;
     currentState->history[0].fromRank=game->moves[game->moves.size() - 1]->from_rank;
     currentState->history[0].toFile  =game->moves[game->moves.size() - 1]->to_file;
     currentState->history[0].fromFile=game->moves[game->moves.size() - 1]->from_file;
     currentState->history[0].piece   =e;
-    
-    
-    
+
+
+
     if(currentState->enemyPieces[e].type=="Pawn" || game->moves[game->moves.size() - 1]->promotion!="" || game->moves[game->moves.size() - 1]->captured!=NULL)
     {
       currentState->boringPly=0;
@@ -242,10 +242,10 @@ bool AI::run_turn()
       currentState->boringPly++;
     }
   }
-  
-  
+
+
   MoveList * choice;
-  
+
   struct timespec tv;
   struct timespec tv1;
 
@@ -254,9 +254,9 @@ bool AI::run_turn()
   unsigned long start = (unsigned long)(tv.tv_sec) * 1000000000 + (unsigned long)(tv.tv_nsec) ;
   unsigned long stop;
   long result;
-  
+
   currentState->genMoves();
-  
+
   //for(int i=1; i<=maxDepthLimit; i++)
   for(int i=1; i>0; i++)
   {
@@ -270,11 +270,11 @@ bool AI::run_turn()
       //cout<<"reached a depth of "<<i<<" in "<<result<<"out of"<<timePerTurn<<endl;
       break;
     }
-    
+
   }
-  
+
   currentState->updateState(choice);
-  
+
   if(choice->promotionType!="")
   {
     currentState->playerPieces[choice->piece].pieceRef->move(choice->toFile, choice->toRank, choice->promotionType);
@@ -283,12 +283,12 @@ bool AI::run_turn()
   {
     currentState->playerPieces[choice->piece].pieceRef->move(choice->toFile, choice->toRank);
   }
-  
-  
-  
+
+
+
   MoveList * temp=currentState->legalMoves;
-  
-  
+
+
   while(currentState->legalMoves != NULL)
   {
     temp=currentState->legalMoves;
@@ -296,11 +296,11 @@ bool AI::run_turn()
     delete temp;
   }
   currentState->numMoves=0;
-  
-  
-  
+
+
+
   return true; // to signify we are done with our turn.
-  
+
 }
 
 /// <summary>
